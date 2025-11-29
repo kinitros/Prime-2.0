@@ -59,6 +59,46 @@ const UsernameInput: React.FC<UsernameInputProps> = ({ platform, onProfileFound,
         }
     };
 
+    // Extract username from URL or clean input
+    const extractUsername = (input: string, platformId: string): string => {
+        let cleaned = input.trim();
+
+        // Remove @ if present at the start
+        cleaned = cleaned.replace(/^@/, '');
+
+        // Try to extract from URL patterns
+        try {
+            // Instagram: https://www.instagram.com/username or instagram.com/username
+            if (platformId === 'instagram' && (cleaned.includes('instagram.com') || cleaned.includes('instagr.am'))) {
+                const match = cleaned.match(/(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9._]+)/);
+                if (match) return match[1];
+            }
+
+            // TikTok: https://www.tiktok.com/@username or tiktok.com/@username
+            if (platformId === 'tiktok' && cleaned.includes('tiktok.com')) {
+                const match = cleaned.match(/tiktok\.com\/@?([a-zA-Z0-9._]+)/);
+                if (match) return match[1];
+            }
+
+            // YouTube: https://www.youtube.com/@channelname or youtube.com/c/channelname
+            if (platformId === 'youtube' && cleaned.includes('youtube.com')) {
+                const match = cleaned.match(/youtube\.com\/(?:@|c\/|channel\/)?([a-zA-Z0-9_-]+)/);
+                if (match) return match[1];
+            }
+
+            // Kwai: https://www.kwai.com/@username or kwai.com/@username
+            if (platformId === 'kwai' && cleaned.includes('kwai.com')) {
+                const match = cleaned.match(/kwai\.com\/@?([a-zA-Z0-9._]+)/);
+                if (match) return match[1];
+            }
+        } catch (e) {
+            console.error('Error parsing URL:', e);
+        }
+
+        // If no URL pattern matched, return cleaned input
+        return cleaned;
+    };
+
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -70,33 +110,42 @@ const UsernameInput: React.FC<UsernameInputProps> = ({ platform, onProfileFound,
         setIsLoading(true);
         setError(null);
 
+        // Extract username from URL or clean the input
+        const cleanedUsername = extractUsername(username, platform.id);
+
+        if (!cleanedUsername) {
+            setError('Por favor, digite um usuário válido.');
+            setIsLoading(false);
+            return;
+        }
+
         try {
             let profile: any;
 
             switch (platform.id) {
                 case 'instagram':
-                    profile = await fetchInstagramProfile(username);
+                    profile = await fetchInstagramProfile(cleanedUsername);
                     break;
 
                 case 'tiktok':
-                    profile = await fetchTikTokProfile(username);
+                    profile = await fetchTikTokProfile(cleanedUsername);
                     break;
 
                 case 'youtube':
-                    profile = await fetchYouTubeChannel(username);
+                    profile = await fetchYouTubeChannel(cleanedUsername);
                     break;
 
                 case 'kwai':
-                    profile = await fetchKwaiProfile(username);
+                    profile = await fetchKwaiProfile(cleanedUsername);
                     break;
 
                 default:
                     // Fallback for platforms without API
                     setTimeout(() => {
                         onProfileFound({
-                            username: username.replace('@', ''),
+                            username: cleanedUsername,
                             full_name: 'Usuário Simulado',
-                            profile_pic_url: 'https://ui-avatars.com/api/?name=' + username,
+                            profile_pic_url: 'https://ui-avatars.com/api/?name=' + cleanedUsername,
                             follower_count: 1000,
                             following_count: 500,
                             media_count: 10,

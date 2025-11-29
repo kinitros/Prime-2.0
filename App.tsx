@@ -34,9 +34,9 @@ const MainApp: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-slate-900 font-sans selection:bg-primary selection:text-white">
       <FOMONotifications />
-      {/* Black Friday Top Banner */}
+      {/* Black Friday Top Banner - Sticky */}
       {showBanner && (
-        <div className="bg-slate-900 text-white py-2 px-4 text-center relative z-50 animate-fade-in">
+        <div className="sticky top-0 bg-slate-900 text-white py-2 px-4 text-center relative z-50 animate-fade-in shadow-lg">
           <p className="text-sm font-medium flex items-center justify-center gap-2">
             <span className="bg-yellow-400 text-slate-900 text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">BLACK FRIDAY</span>
             <span className="hidden sm:inline">Aproveite descontos de até</span>
@@ -55,24 +55,27 @@ const MainApp: React.FC = () => {
 
       <Navbar />
 
-      {/* Hero Section */}
-      <section id="home" className="relative pt-40 pb-20 lg:pt-52 lg:pb-32 overflow-hidden bg-mesh bg-cover bg-no-repeat bg-center">
+      {/* Hero Section - Black with Shine */}
+      <section id="home" className="relative pt-40 pb-20 lg:pt-52 lg:pb-32 overflow-hidden bg-black">
+        {/* Animated shine effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shine"></div>
+
         {/* Animated Background Blobs */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-60">
-          <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-blob"></div>
-          <div className="absolute top-20 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-32 left-1/2 w-96 h-96 bg-secondary/20 rounded-full blur-[100px] animate-blob animation-delay-4000"></div>
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-40">
+          <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary/30 rounded-full blur-[100px] animate-blob"></div>
+          <div className="absolute top-20 right-1/4 w-96 h-96 bg-accent/30 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-32 left-1/2 w-96 h-96 bg-secondary/30 rounded-full blur-[100px] animate-blob animation-delay-4000"></div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col items-center text-center">
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6 text-slate-900 leading-tight">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6 text-white leading-tight">
             Compre Seguidores e Curtidas <br className="hidden md:block" />
-            <span className="text-gradient">Entregues em Minutos!</span>
+            <span className="bg-gradient-to-r from-yellow-400 via-yellow-200 to-yellow-400 bg-clip-text text-transparent">Entregue em Minutos!</span>
           </h1>
 
-          <p className="max-w-2xl mx-auto text-lg text-slate-500 mb-12 font-medium leading-relaxed">
-            Conte com a <strong>Seguidores Prime</strong>, o serviço de crescimento nº 1 do Brasil, para construir uma presença robusta nas redes sociais.
+          <p className="max-w-2xl mx-auto text-lg text-white/70 mb-12 font-medium leading-relaxed">
+            Conte com a <strong className="text-white">Seguidores Prime</strong>, o serviço de crescimento nº 1 do Brasil, para construir uma presença robusta nas redes sociais.
           </p>
 
           {/* INTERACTIVE SERVICE SELECTOR CARD */}
@@ -388,24 +391,43 @@ const MainApp: React.FC = () => {
         </div>
       </section>
 
-      {/* Modern CTA */}
-      <section className="py-24 bg-white">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="bg-gradient-to-r from-primary to-accent rounded-3xl p-12 md:p-20 text-center relative overflow-hidden shadow-[0_20px_50px_rgba(123,97,255,0.3)]">
-            <div className="absolute top-0 left-0 w-full h-full bg-black/5"></div>
-            <div className="relative z-10">
-              <h2 className="text-4xl md:text-6xl font-bold text-white mb-8">
-                Economize tempo.<br />Cresça mais rápido.
-              </h2>
-              <p className="text-white/90 text-xl mb-10 font-medium max-w-2xl mx-auto">
-                Junte-se a mais de 50.000 criadores que usam a Seguidores Prime para gerenciar sua presença digital.
-              </p>
-              <button className="bg-white text-primary font-bold text-lg px-12 py-4 rounded-xl hover:bg-slate-50 transition-colors shadow-lg">
-                Começar Agora
-              </button>
-            </div>
+      {/* Modern CTA - Black with Shine */}
+      <section className="py-24 bg-slate-900 relative overflow-hidden">
+        {/* Animated shine effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shine"></div>
+
+        {/* Gradient orbs */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/20 rounded-full blur-[120px]"></div>
+
+        <div className="max-w-5xl mx-auto px-4 relative z-10">
+          <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-3xl p-12 md:p-20 text-center border border-white/10 shadow-2xl">
+            <h2 className="text-4xl md:text-6xl font-bold text-white mb-8">
+              Economize tempo.<br />Cresça mais rápido.
+            </h2>
+            <p className="text-white/80 text-xl mb-10 font-medium max-w-2xl mx-auto">
+              Junte-se a mais de 50.000 criadores que usam a Seguidores Prime para gerenciar sua presença digital.
+            </p>
+            <button className="bg-gradient-to-r from-primary to-secondary hover:from-primary-hover hover:to-secondary text-white font-bold text-lg px-12 py-4 rounded-xl transition-all shadow-lg hover:shadow-2xl hover:-translate-y-1">
+              Começar Agora
+            </button>
           </div>
         </div>
+
+        <style>{`
+          @keyframes shine {
+            0% {
+              transform: translateX(-100%) skewX(-15deg);
+            }
+            100% {
+              transform: translateX(200%) skewX(-15deg);
+            }
+          }
+          
+          .animate-shine {
+            animation: shine 8s ease-in-out infinite;
+          }
+        `}</style>
       </section>
 
       <Footer />
