@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Settings as SettingsIcon, CreditCard, Percent, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useAdmin } from '../../context/AdminContext';
+import { Settings as SettingsIcon, CreditCard, Percent, Save, AlertCircle, CheckCircle2, Link as LinkIcon, MessageCircle } from 'lucide-react';
 
 interface PixDiscountSettings {
     enabled: boolean;
@@ -8,6 +9,9 @@ interface PixDiscountSettings {
 }
 
 const Settings: React.FC = () => {
+    const { testButtonUrl, whatsappUrl, updateTestButtonUrl, updateWhatsappUrl } = useAdmin();
+    const [localTestUrl, setLocalTestUrl] = useState('');
+    const [localWhatsappUrl, setLocalWhatsappUrl] = useState('');
     const [pixDiscount, setPixDiscount] = useState<PixDiscountSettings>({ enabled: true, percentage: 5 });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -16,7 +20,9 @@ const Settings: React.FC = () => {
 
     useEffect(() => {
         fetchSettings();
-    }, []);
+        setLocalTestUrl(testButtonUrl);
+        setLocalWhatsappUrl(whatsappUrl);
+    }, [testButtonUrl, whatsappUrl]);
 
     const fetchSettings = async () => {
         setLoading(true);
@@ -62,6 +68,10 @@ const Settings: React.FC = () => {
 
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
+
+            // Save URLs
+            await updateTestButtonUrl(localTestUrl);
+            await updateWhatsappUrl(localWhatsappUrl);
         } catch (err: any) {
             console.error('Error saving settings:', err);
             setError(err.message);
@@ -181,6 +191,56 @@ const Settings: React.FC = () => {
                                 </p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* URL Settings */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <LinkIcon className="w-5 h-5 text-primary" />
+                        Links e Integrações
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Configure os links externos do site
+                    </p>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* Test Button URL */}
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                            Link do Botão "Teste por R$5,90"
+                        </label>
+                        <input
+                            type="url"
+                            value={localTestUrl}
+                            onChange={(e) => setLocalTestUrl(e.target.value)}
+                            placeholder="https://exemplo.com/teste"
+                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                        <p className="text-xs text-slate-500 mt-2">
+                            Este link aparecerá no botão de teste na seção Hero
+                        </p>
+                    </div>
+
+                    {/* WhatsApp URL */}
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                            <MessageCircle className="w-4 h-4 text-green-600" />
+                            Link do WhatsApp
+                        </label>
+                        <input
+                            type="url"
+                            value={localWhatsappUrl}
+                            onChange={(e) => setLocalWhatsappUrl(e.target.value)}
+                            placeholder="https://wa.me/5511999999999"
+                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                        <p className="text-xs text-slate-500 mt-2">
+                            Botão flutuante do WhatsApp (canto inferior direito)
+                        </p>
                     </div>
                 </div>
             </div>

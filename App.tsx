@@ -4,15 +4,18 @@ import Navbar from './components/Navbar';
 import PlatformCard from './components/PlatformCard';
 import Features from './components/Features';
 import Footer from './components/Footer';
+import BusinessServices from './components/BusinessServices';
+import FOMONotifications from './components/FOMONotifications';
+import WhatsAppFloat from './components/WhatsAppFloat';
 import Modal from './components/Modal';
 import { TESTIMONIALS } from './constants';
 import { PlatformData } from './types';
-import { ArrowRight, Star, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Star, CheckCircle2, Instagram, Youtube, Video, Play, ThumbsUp, Users, Eye, MessageCircle, CreditCard, ShieldCheck, Zap } from 'lucide-react';
 import { AdminProvider, useAdmin } from './context/AdminContext';
 import AdminDashboard from './components/admin/AdminDashboard';
 
 const MainApp: React.FC = () => {
-  const { platforms } = useAdmin();
+  const { platforms, testButtonUrl } = useAdmin();
   const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -24,9 +27,13 @@ const MainApp: React.FC = () => {
   };
 
   const [showBanner, setShowBanner] = useState(true);
+  const [activeHeroTab, setActiveHeroTab] = useState<'instagram' | 'tiktok' | 'youtube' | 'kwai'>('instagram');
+
+  const getPlatformById = (id: string) => platforms.find(p => p.id === id);
 
   return (
     <div className="min-h-screen bg-background text-slate-900 font-sans selection:bg-primary selection:text-white">
+      <FOMONotifications />
       {/* Black Friday Top Banner */}
       {showBanner && (
         <div className="bg-slate-900 text-white py-2 px-4 text-center relative z-50 animate-fade-in">
@@ -50,76 +57,280 @@ const MainApp: React.FC = () => {
 
       {/* Hero Section */}
       <section id="home" className="relative pt-40 pb-20 lg:pt-52 lg:pb-32 overflow-hidden bg-mesh bg-cover bg-no-repeat bg-center">
-        {/* Animated Background Blobs - Adjusted for Light Mode */}
+        {/* Animated Background Blobs */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-60">
           <div className="absolute top-20 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px] animate-blob"></div>
           <div className="absolute top-20 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
           <div className="absolute -bottom-32 left-1/2 w-96 h-96 bg-secondary/20 rounded-full blur-[100px] animate-blob animation-delay-4000"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center flex flex-col items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col items-center text-center">
 
-          {/* Black Friday Badge */}
-          <div className="mb-6 inline-flex items-center gap-2 bg-slate-900/5 border border-slate-900/10 rounded-full px-4 py-1.5 animate-fade-in">
-            <span className="bg-slate-900 text-yellow-400 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">BLACK FRIDAY</span>
-            <span className="text-sm font-bold text-slate-900">Ofertas por tempo limitado 🔥</span>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-6 text-slate-900 leading-[1.1]">
-            Uma app para <br className="hidden md:block" />
-            <span className="text-gradient">crescer todos eles.</span>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight mb-6 text-slate-900 leading-tight">
+            Compre Seguidores e Curtidas <br className="hidden md:block" />
+            <span className="text-gradient">Entregues em Minutos!</span>
           </h1>
 
-          <p className="max-w-2xl mx-auto text-xl text-slate-500 mb-10 font-medium leading-relaxed">
-            Simplifique seu crescimento digital. Instagram, TikTok, YouTube e mais — gerencie sua autoridade em uma única plataforma poderosa.
+          <p className="max-w-2xl mx-auto text-lg text-slate-500 mb-12 font-medium leading-relaxed">
+            Conte com a <strong>Seguidores Prime</strong>, o serviço de crescimento nº 1 do Brasil, para construir uma presença robusta nas redes sociais.
           </p>
 
-          <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
-            <a href="#services" className="px-10 py-4 bg-slate-900 text-yellow-400 rounded-xl font-black text-lg hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2 border border-yellow-400/20">
-              Ver Ofertas Black Friday
-              <ArrowRight className="w-5 h-5" />
-            </a>
-            <button className="px-10 py-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-lg transition-all flex items-center justify-center shadow-sm">
-              Ver demonstração
-            </button>
-          </div>
+          {/* INTERACTIVE SERVICE SELECTOR CARD */}
+          <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-fade-in-up">
 
-          <div className="mt-12 flex flex-wrap justify-center gap-6 text-sm text-slate-500 font-semibold">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-success" /> Sem cartão de crédito
+            {/* TABS */}
+            <div className="flex overflow-x-auto border-b border-slate-100 scrollbar-hide">
+              <button
+                onClick={() => setActiveHeroTab('instagram')}
+                className={`flex-1 py-4 px-6 flex items-center justify-center gap-2 font-bold text-sm transition-all whitespace-nowrap ${activeHeroTab === 'instagram' ? 'bg-primary/5 text-primary border-b-2 border-primary' : 'text-slate-500 hover:bg-slate-50'}`}
+              >
+                <Instagram className="w-5 h-5" /> Instagram
+              </button>
+              <button
+                onClick={() => setActiveHeroTab('tiktok')}
+                className={`flex-1 py-4 px-6 flex items-center justify-center gap-2 font-bold text-sm transition-all whitespace-nowrap ${activeHeroTab === 'tiktok' ? 'bg-primary/5 text-primary border-b-2 border-primary' : 'text-slate-500 hover:bg-slate-50'}`}
+              >
+                <div className="w-5 h-5 flex items-center justify-center"><Video className="w-5 h-5" /></div> TikTok
+              </button>
+              <button
+                onClick={() => setActiveHeroTab('youtube')}
+                className={`flex-1 py-4 px-6 flex items-center justify-center gap-2 font-bold text-sm transition-all whitespace-nowrap ${activeHeroTab === 'youtube' ? 'bg-primary/5 text-primary border-b-2 border-primary' : 'text-slate-500 hover:bg-slate-50'}`}
+              >
+                <Youtube className="w-5 h-5" /> YouTube
+              </button>
+              <button
+                onClick={() => setActiveHeroTab('kwai')}
+                className={`flex-1 py-4 px-6 flex items-center justify-center gap-2 font-bold text-sm transition-all whitespace-nowrap ${activeHeroTab === 'kwai' ? 'bg-primary/5 text-primary border-b-2 border-primary' : 'text-slate-500 hover:bg-slate-50'}`}
+              >
+                <Play className="w-5 h-5" /> Kwai
+              </button>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-success" /> Garantia vitalícia
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-success" /> Suporte 24/7
-            </div>
-          </div>
 
-          {/* Dashboard Preview / Visual Anchor - Light Mode */}
-          <div className="mt-20 relative w-full max-w-5xl">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-20"></div>
-            <div className="relative bg-white rounded-2xl border border-slate-200 p-2 shadow-2xl">
-              <div className="bg-slate-50 rounded-xl overflow-hidden aspect-[16/9] flex items-center justify-center relative border border-slate-100">
-                {/* Abstract Representation of the App Interface */}
-                <div className="absolute inset-0 grid grid-cols-12 gap-4 p-8 opacity-70">
-                  <div className="col-span-3 bg-white rounded-lg h-full shadow-sm animate-pulse border border-slate-100"></div>
-                  <div className="col-span-9 space-y-4">
-                    <div className="flex gap-4 mb-8">
-                      <div className="w-1/3 h-32 bg-white rounded-lg shadow-sm border border-slate-100"></div>
-                      <div className="w-1/3 h-32 bg-white rounded-lg shadow-sm border border-slate-100"></div>
-                      <div className="w-1/3 h-32 bg-white rounded-lg shadow-sm border border-slate-100"></div>
+            {/* CONTENT AREA */}
+            <div className="p-8 bg-slate-50/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                {/* DYNAMIC BUTTONS BASED ON ACTIVE TAB */}
+                {activeHeroTab === 'instagram' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const p = getPlatformById('instagram');
+                        if (p) handlePlatformClick(p);
+                      }}
+                      className="group bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] p-[1px] rounded-xl hover:shadow-lg transition-all hover:-translate-y-1"
+                    >
+                      <div className="bg-white h-full w-full rounded-xl p-4 flex items-center gap-4 group-hover:bg-opacity-90 transition-all">
+                        <div className="bg-orange-100 p-3 rounded-full text-orange-600">
+                          <Users className="w-6 h-6" />
+                        </div>
+                        <div className="text-left">
+                          <span className="block font-black text-slate-900 text-lg">Comprar Seguidores</span>
+                          <span className="text-xs text-slate-500 font-medium">Reais e Brasileiros</span>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-orange-500 transition-colors" />
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const p = getPlatformById('instagram');
+                        if (p) handlePlatformClick(p);
+                      }}
+                      className="group bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] p-[1px] rounded-xl hover:shadow-lg transition-all hover:-translate-y-1"
+                    >
+                      <div className="bg-white h-full w-full rounded-xl p-4 flex items-center gap-4 group-hover:bg-opacity-90 transition-all">
+                        <div className="bg-pink-100 p-3 rounded-full text-pink-600">
+                          <ThumbsUp className="w-6 h-6" />
+                        </div>
+                        <div className="text-left">
+                          <span className="block font-black text-slate-900 text-lg">Comprar Curtidas</span>
+                          <span className="text-xs text-slate-500 font-medium">Entrega Instantânea</span>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-pink-500 transition-colors" />
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const p = getPlatformById('instagram');
+                        if (p) handlePlatformClick(p);
+                      }}
+                      className="group bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] p-[1px] rounded-xl hover:shadow-lg transition-all hover:-translate-y-1"
+                    >
+                      <div className="bg-white h-full w-full rounded-xl p-4 flex items-center gap-4 group-hover:bg-opacity-90 transition-all">
+                        <div className="bg-purple-100 p-3 rounded-full text-purple-600">
+                          <Eye className="w-6 h-6" />
+                        </div>
+                        <div className="text-left">
+                          <span className="block font-black text-slate-900 text-lg">Comprar Views</span>
+                          <span className="text-xs text-slate-500 font-medium">Para Reels e Stories</span>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-purple-500 transition-colors" />
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const p = getPlatformById('instagram');
+                        if (p) handlePlatformClick(p);
+                      }}
+                      className="group bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] p-[1px] rounded-xl hover:shadow-lg transition-all hover:-translate-y-1"
+                    >
+                      <div className="bg-white h-full w-full rounded-xl p-4 flex items-center gap-4 group-hover:bg-opacity-90 transition-all">
+                        <div className="bg-blue-100 p-3 rounded-full text-blue-600">
+                          <MessageCircle className="w-6 h-6" />
+                        </div>
+                        <div className="text-left">
+                          <span className="block font-black text-slate-900 text-lg">Comprar Comentários</span>
+                          <span className="text-xs text-slate-500 font-medium">Personalizados</span>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-blue-500 transition-colors" />
+                      </div>
+                    </button>
+                  </>
+                )}
+
+                {activeHeroTab === 'tiktok' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const p = getPlatformById('tiktok');
+                        if (p) handlePlatformClick(p);
+                      }}
+                      className="group bg-black p-[1px] rounded-xl hover:shadow-lg transition-all hover:-translate-y-1"
+                    >
+                      <div className="bg-white h-full w-full rounded-xl p-4 flex items-center gap-4 group-hover:bg-opacity-90 transition-all">
+                        <div className="bg-slate-100 p-3 rounded-full text-slate-900">
+                          <Users className="w-6 h-6" />
+                        </div>
+                        <div className="text-left">
+                          <span className="block font-black text-slate-900 text-lg">Seguidores TikTok</span>
+                          <span className="text-xs text-slate-500 font-medium">Alta Qualidade</span>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-slate-900 transition-colors" />
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const p = getPlatformById('tiktok');
+                        if (p) handlePlatformClick(p);
+                      }}
+                      className="group bg-black p-[1px] rounded-xl hover:shadow-lg transition-all hover:-translate-y-1"
+                    >
+                      <div className="bg-white h-full w-full rounded-xl p-4 flex items-center gap-4 group-hover:bg-opacity-90 transition-all">
+                        <div className="bg-red-100 p-3 rounded-full text-red-600">
+                          <ThumbsUp className="w-6 h-6" />
+                        </div>
+                        <div className="text-left">
+                          <span className="block font-black text-slate-900 text-lg">Curtidas TikTok</span>
+                          <span className="text-xs text-slate-500 font-medium">Impulsione seu vídeo</span>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-red-600 transition-colors" />
+                      </div>
+                    </button>
+                  </>
+                )}
+
+                {activeHeroTab === 'youtube' && (
+                  <button
+                    onClick={() => {
+                      const p = getPlatformById('youtube');
+                      if (p) handlePlatformClick(p);
+                    }}
+                    className="group bg-red-600 p-[1px] rounded-xl hover:shadow-lg transition-all hover:-translate-y-1 col-span-2"
+                  >
+                    <div className="bg-white h-full w-full rounded-xl p-4 flex items-center gap-4 group-hover:bg-opacity-90 transition-all">
+                      <div className="bg-red-100 p-3 rounded-full text-red-600">
+                        <Youtube className="w-6 h-6" />
+                      </div>
+                      <div className="text-left">
+                        <span className="block font-black text-slate-900 text-lg">Serviços para YouTube</span>
+                        <span className="text-xs text-slate-500 font-medium">Inscritos, Views e Likes</span>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-red-600 transition-colors" />
                     </div>
-                    <div className="w-full h-64 bg-white rounded-lg shadow-sm border border-slate-100"></div>
-                  </div>
-                </div>
-                <div className="z-10 text-center">
-                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Painel de Controle Unificado</h3>
-                  <p className="text-slate-500">Acompanhe métricas em tempo real.</p>
-                </div>
+                  </button>
+                )}
+
+                {activeHeroTab === 'kwai' && (
+                  <button
+                    onClick={() => {
+                      const p = getPlatformById('kwai');
+                      if (p) handlePlatformClick(p);
+                    }}
+                    className="group bg-orange-500 p-[1px] rounded-xl hover:shadow-lg transition-all hover:-translate-y-1 col-span-2"
+                  >
+                    <div className="bg-white h-full w-full rounded-xl p-4 flex items-center gap-4 group-hover:bg-opacity-90 transition-all">
+                      <div className="bg-orange-100 p-3 rounded-full text-orange-600">
+                        <Play className="w-6 h-6" />
+                      </div>
+                      <div className="text-left">
+                        <span className="block font-black text-slate-900 text-lg">Serviços para Kwai</span>
+                        <span className="text-xs text-slate-500 font-medium">Seguidores e Curtidas</span>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-orange-600 transition-colors" />
+                    </div>
+                  </button>
+                )}
+
+              </div>
+            </div>
+
+            {/* TRUST BAR */}
+            <div className="bg-white border-t border-slate-100 p-4 flex flex-wrap justify-center gap-6 text-xs font-bold text-slate-500 uppercase tracking-wide">
+              <div className="flex items-center gap-2">
+                <div className="flex text-yellow-400"><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /></div>
+                <span>4.8/5 Estrelas</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-primary" />
+                <span>Entrega Rápida</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-green-500" />
+                <span>Pagamento Seguro</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-slate-400" />
+                <span>Pix & Cartão</span>
               </div>
             </div>
           </div>
+
+          {/* Test Button */}
+          {testButtonUrl && (
+            <div className="mt-8">
+              <a
+                href={testButtonUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative inline-flex items-center gap-3 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-slate-900 font-black text-xl px-12 py-5 rounded-2xl transition-all shadow-2xl hover:shadow-3xl hover:-translate-y-1 animate-pulse-glow"
+              >
+                <span className="relative z-10">🔥 Teste por apenas R$5,90</span>
+
+                {/* Pulse rings */}
+                <span className="absolute inset-0 rounded-2xl bg-yellow-400 animate-ping opacity-20"></span>
+                <span className="absolute inset-0 rounded-2xl bg-yellow-400 animate-pulse opacity-30"></span>
+              </a>
+
+              <style>{`
+                @keyframes pulse-glow {
+                  0%, 100% {
+                    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5), 0 0 40px rgba(251, 191, 36, 0.3);
+                  }
+                  50% {
+                    box-shadow: 0 0 30px rgba(251, 191, 36, 0.8), 0 0 60px rgba(251, 191, 36, 0.5);
+                  }
+                }
+                
+                .animate-pulse-glow {
+                  animation: pulse-glow 2s ease-in-out infinite;
+                }
+              `}</style>
+            </div>
+          )}
+
         </div>
       </section>
 
@@ -143,6 +354,8 @@ const MainApp: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <BusinessServices />
 
       <Features />
 
@@ -185,7 +398,7 @@ const MainApp: React.FC = () => {
                 Economize tempo.<br />Cresça mais rápido.
               </h2>
               <p className="text-white/90 text-xl mb-10 font-medium max-w-2xl mx-auto">
-                Junte-se a mais de 50.000 criadores que usam o Impulso para gerenciar sua presença digital.
+                Junte-se a mais de 50.000 criadores que usam a Seguidores Prime para gerenciar sua presença digital.
               </p>
               <button className="bg-white text-primary font-bold text-lg px-12 py-4 rounded-xl hover:bg-slate-50 transition-colors shadow-lg">
                 Começar Agora
@@ -196,6 +409,8 @@ const MainApp: React.FC = () => {
       </section>
 
       <Footer />
+
+      <WhatsAppFloat />
 
       <Modal
         isOpen={isModalOpen}

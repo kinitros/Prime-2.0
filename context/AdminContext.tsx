@@ -5,6 +5,10 @@ import { supabase } from '../lib/supabase';
 interface AdminContextType {
     platforms: PlatformData[];
     isLoading: boolean;
+    testButtonUrl: string;
+    whatsappUrl: string;
+    updateTestButtonUrl: (url: string) => Promise<void>;
+    updateWhatsappUrl: (url: string) => Promise<void>;
     updateProduct: (platformId: string, offerId: string, product: Product) => Promise<void>;
     addProduct: (platformId: string, offerId: string, product: Product) => Promise<void>;
     deleteProduct: (platformId: string, offerId: string, productId: string) => Promise<void>;
@@ -23,6 +27,8 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [platforms, setPlatforms] = useState<PlatformData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [testButtonUrl, setTestButtonUrl] = useState('');
+    const [whatsappUrl, setWhatsappUrl] = useState('');
 
     // Load data from Supabase on mount
     useEffect(() => {
@@ -332,10 +338,34 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         await refreshData();
     };
 
+    const updateTestButtonUrl = async (url: string) => {
+        setTestButtonUrl(url);
+        // Store in localStorage for now (could be moved to Supabase later)
+        localStorage.setItem('testButtonUrl', url);
+    };
+
+    const updateWhatsappUrl = async (url: string) => {
+        setWhatsappUrl(url);
+        // Store in localStorage for now (could be moved to Supabase later)
+        localStorage.setItem('whatsappUrl', url);
+    };
+
+    // Load URLs from localStorage on mount
+    useEffect(() => {
+        const savedTestUrl = localStorage.getItem('testButtonUrl') || '';
+        const savedWhatsappUrl = localStorage.getItem('whatsappUrl') || '';
+        setTestButtonUrl(savedTestUrl);
+        setWhatsappUrl(savedWhatsappUrl);
+    }, []);
+
     return (
         <AdminContext.Provider value={{
             platforms,
             isLoading,
+            testButtonUrl,
+            whatsappUrl,
+            updateTestButtonUrl,
+            updateWhatsappUrl,
             updateProduct,
             addProduct,
             deleteProduct,

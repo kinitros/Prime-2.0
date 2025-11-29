@@ -1,68 +1,74 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Impulso | O App de Crescimento Social</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              background: '#FFFFFF', // White
-              surface: '#F8FAFC', // Slate 50
-              card: '#FFFFFF',
-              primary: '#7B61FF', // ClickUp Purple
-              'primary-hover': '#6C52EE',
-              accent: '#FF3385', // Vibrant Pink
-              secondary: '#33C1FF', // Blue
-              success: '#10B981', // Emerald 500
-              muted: '#64748B', // Slate 500
-              dark: '#0F172A', // Slate 900
-            },
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            backgroundImage: {
-              'brand-gradient': 'linear-gradient(135deg, #7B61FF 0%, #FF3385 100%)',
-              'mesh': 'radial-gradient(at 0% 0%, hsla(253,100%,96%,1) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(225,100%,96%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(339,100%,96%,1) 0, transparent 50%)',
-            },
-            animation: {
-              'blob': 'blob 7s infinite',
-            },
-            keyframes: {
-              blob: {
-                '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                '100%': { transform: 'translate(0px, 0px) scale(1)' },
-              }
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seguidores Prime | Comprar Seguidores, Curtidas e Views</title>
+  <meta name="description"
+    content="A Seguidores Prime é o melhor site para comprar seguidores, curtidas e visualizações nas redes sociais. Segurança, qualidade e entrega rápida. Aproveite a Black Friday!" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#FFFFFF', // White
+            surface: '#F8FAFC', // Slate 50
+            card: '#FFFFFF',
+            primary: '#3333FF', // Brand Blue
+            'primary-hover': '#2929CC',
+            accent: '#FF00CC', // Brand Magenta
+            secondary: '#00C6FF', // Brand Cyan
+            success: '#10B981', // Emerald 500
+            muted: '#64748B', // Slate 500
+            dark: '#00264D', // Brand Navy
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          backgroundImage: {
+            'brand-gradient': 'linear-gradient(135deg, #3333FF 0%, #00C6FF 100%)',
+            'mesh': 'radial-gradient(at 0% 0%, hsla(240,100%,96%,1) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(190,100%,96%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(300,100%,96%,1) 0, transparent 50%)',
+          },
+          animation: {
+            'blob': 'blob 7s infinite',
+          },
+          keyframes: {
+            blob: {
+              '0%': { transform: 'translate(0px, 0px) scale(1)' },
+              '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+              '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+              '100%': { transform: 'translate(0px, 0px) scale(1)' },
             }
           }
         }
       }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-      body {
-        font-family: 'Inter', sans-serif;
-        background-color: #FFFFFF;
-        color: #0F172A;
-      }
-      .glass-nav {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-      }
-      .text-gradient {
-        background: linear-gradient(to right, #7B61FF, #FF3385);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-    </style>
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #FFFFFF;
+      color: #0F172A;
+    }
+
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .text-gradient {
+      background: linear-gradient(to right, #7B61FF, #FF3385);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -73,10 +79,12 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body>
-    <div id="root"></div>
+
+<body>
+  <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>
