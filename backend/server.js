@@ -251,7 +251,11 @@ app.get('/api/pix/status/:orderId', async (req, res) => {
 // Webhook endpoint to receive PushinPay notifications
 app.post('/api/webhook/pushinpay', async (req, res) => {
     try {
-        console.log('[PushinPay Webhook] Received webhook:', JSON.stringify(req.body, null, 2));
+        console.log('[PushinPay Webhook] ===== WEBHOOK RECEIVED =====');
+        console.log('[PushinPay Webhook] Headers:', JSON.stringify(req.headers, null, 2));
+        console.log('[PushinPay Webhook] Body:', JSON.stringify(req.body, null, 2));
+        console.log('[PushinPay Webhook] Query:', JSON.stringify(req.query, null, 2));
+        console.log('[PushinPay Webhook] =============================');
 
         const { id, status, paid_at, order_id } = req.body;
 
