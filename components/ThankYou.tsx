@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { CheckCircle2, Package, Clock, Smartphone, ArrowRight, Home, MessageCircle } from 'lucide-react';
+import { CheckCircle2, Package, Clock, Smartphone, ArrowRight, Home, MessageCircle, Users } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAdmin } from '../context/AdminContext';
 
 interface ThankYouProps {
   orderData?: {
@@ -17,6 +18,7 @@ interface ThankYouProps {
 const ThankYou: React.FC<ThankYouProps> = ({ orderData }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { whatsappGroupUrl } = useAdmin();
 
   // Get order data from URL params if not passed as props
   const orderId = orderData?.orderId || searchParams.get('orderId') || '';
@@ -79,6 +81,24 @@ const ThankYou: React.FC<ThankYouProps> = ({ orderData }) => {
           <p className="text-lg text-slate-600 animate-slide-up" style={{ animationDelay: '0.1s' }}>
             Seu pedido foi recebido e já está sendo processado.
           </p>
+          
+          {whatsappGroupUrl && (
+            <div className="mt-6 animate-slide-up" style={{ animationDelay: '0.15s' }}>
+              <a
+                href={whatsappGroupUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#128C7E] text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+              >
+                <Users className="w-5 h-5" />
+                Entrar no Grupo de Promoções
+                <ArrowRight className="w-4 h-4" />
+              </a>
+              <p className="text-xs text-slate-500 mt-2">
+                Receba ofertas exclusivas e cupons de desconto!
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Order Details Card */}

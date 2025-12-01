@@ -7,8 +7,14 @@ interface AdminContextType {
     isLoading: boolean;
     testButtonUrl: string;
     whatsappUrl: string;
+    whatsappGroupUrl: string;
+    logoUrl: string;
+    faviconUrl: string;
     updateTestButtonUrl: (url: string) => Promise<void>;
     updateWhatsappUrl: (url: string) => Promise<void>;
+    updateWhatsappGroupUrl: (url: string) => Promise<void>;
+    updateLogoUrl: (url: string) => Promise<void>;
+    updateFaviconUrl: (url: string) => Promise<void>;
     updateProduct: (platformId: string, offerId: string, product: Product) => Promise<void>;
     addProduct: (platformId: string, offerId: string, product: Product) => Promise<void>;
     deleteProduct: (platformId: string, offerId: string, productId: string) => Promise<void>;
@@ -29,11 +35,101 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [isLoading, setIsLoading] = useState(true);
     const [testButtonUrl, setTestButtonUrl] = useState('');
     const [whatsappUrl, setWhatsappUrl] = useState('');
+    const [whatsappGroupUrl, setWhatsappGroupUrl] = useState('');
+    const [logoUrl, setLogoUrl] = useState('');
+    const [faviconUrl, setFaviconUrl] = useState('');
 
     // Load data from Supabase on mount
     useEffect(() => {
         loadPlatforms();
+        loadSettings();
     }, []);
+
+    const loadSettings = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('settings')
+                .select('*')
+                .in('setting_key', ['site_logo', 'site_favicon', 'whatsapp_group_url']);
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error loading settings:', error);
+                return;
+            }
+
+            if (data) {
+                const logoSetting = data.find(s => s.setting_key === 'site_logo');
+                const faviconSetting = data.find(s => s.setting_key === 'site_favicon');
+                const whatsappGroupSetting = data.find(s => s.setting_key === 'whatsapp_group_url');
+
+                if (logoSetting) setLogoUrl(logoSetting.setting_value);
+                if (faviconSetting) setFaviconUrl(faviconSetting.setting_value);
+                if (whatsappGroupSetting) setWhatsappGroupUrl(whatsappGroupSetting.setting_value);
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+        }
+    };
+
+    const updateLogoUrl = async (url: string) => {
+        try {
+            const { error } = await supabase
+                .from('settings')
+                .upsert({
+                    setting_key: 'site_logo',
+                    setting_value: url,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                });
+
+            if (error) throw error;
+            setLogoUrl(url);
+        } catch (error) {
+            console.error('Error updating logo:', error);
+            throw error;
+        }
+    };
+
+    const updateFaviconUrl = async (url: string) => {
+        try {
+            const { error } = await supabase
+                .from('settings')
+                .upsert({
+                    setting_key: 'site_favicon',
+                    setting_value: url,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                });
+
+            if (error) throw error;
+            setFaviconUrl(url);
+        } catch (error) {
+            console.error('Error updating favicon:', error);
+            throw error;
+        }
+    };
+
+    const updateWhatsappGroupUrl = async (url: string) => {
+        try {
+            const { error } = await supabase
+                .from('settings')
+                .upsert({
+                    setting_key: 'whatsapp_group_url',
+                    setting_value: url,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                });
+
+            if (error) throw error;
+            setWhatsappGroupUrl(url);
+        } catch (error) {
+            console.error('Error updating whatsapp group url:', error);
+            throw error;
+        }
+    };
 
     const loadPlatforms = async () => {
         setIsLoading(true);
@@ -364,8 +460,14 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             isLoading,
             testButtonUrl,
             whatsappUrl,
+            whatsappGroupUrl,
+            logoUrl,
+            faviconUrl,
             updateTestButtonUrl,
             updateWhatsappUrl,
+            updateWhatsappGroupUrl,
+            updateLogoUrl,
+            updateFaviconUrl,
             updateProduct,
             addProduct,
             deleteProduct,

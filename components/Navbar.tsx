@@ -1,21 +1,29 @@
 import React from 'react';
 import { Menu, X, CheckSquare, Zap } from 'lucide-react';
 import { useState } from 'react';
+import { useAdmin } from '../context/AdminContext';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { logoUrl } = useAdmin();
 
   return (
     <nav className="fixed w-full z-50 glass-nav border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center gap-2">
-            <div className="bg-primary/10 p-2 rounded-lg">
-              <Zap className="w-5 h-5 text-primary fill-primary" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">
-              Seguidores Prime
-            </span>
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="h-10 w-auto object-contain" />
+            ) : (
+              <>
+                <div className="bg-primary/10 p-2 rounded-lg">
+                  <Zap className="w-5 h-5 text-primary fill-primary" />
+                </div>
+                <span className="text-xl font-bold tracking-tight text-slate-900">
+                  Seguidores Prime
+                </span>
+              </>
+            )}
           </div>
 
           <div className="hidden md:block">

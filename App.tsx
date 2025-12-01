@@ -15,9 +15,22 @@ import { AdminProvider, useAdmin } from './context/AdminContext';
 import AdminDashboard from './components/admin/AdminDashboard';
 
 const MainApp: React.FC = () => {
-  const { platforms, testButtonUrl } = useAdmin();
+  const { platforms, testButtonUrl, faviconUrl } = useAdmin();
   const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Update Favicon dynamically
+  React.useEffect(() => {
+    if (faviconUrl) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = faviconUrl;
+    }
+  }, [faviconUrl]);
 
   const selectedPlatform = platforms.find(p => p.id === selectedPlatformId) || null;
 

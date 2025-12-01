@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAdmin } from '../../context/AdminContext';
-import { Settings as SettingsIcon, CreditCard, Percent, Save, AlertCircle, CheckCircle2, Link as LinkIcon, MessageCircle } from 'lucide-react';
+import { Settings as SettingsIcon, CreditCard, Percent, Save, AlertCircle, CheckCircle2, Link as LinkIcon, MessageCircle, Image as ImageIcon, Users } from 'lucide-react';
 
 interface PixDiscountSettings {
     enabled: boolean;
@@ -9,20 +9,74 @@ interface PixDiscountSettings {
 }
 
 const Settings: React.FC = () => {
-    const { testButtonUrl, whatsappUrl, updateTestButtonUrl, updateWhatsappUrl } = useAdmin();
+    const { testButtonUrl, whatsappUrl, whatsappGroupUrl, logoUrl, faviconUrl, updateTestButtonUrl, updateWhatsappUrl, updateWhatsappGroupUrl, updateLogoUrl, updateFaviconUrl } = useAdmin();
     const [localTestUrl, setLocalTestUrl] = useState('');
     const [localWhatsappUrl, setLocalWhatsappUrl] = useState('');
+    const [localWhatsappGroupUrl, setLocalWhatsappGroupUrl] = useState('');
+    const [localLogoUrl, setLocalLogoUrl] = useState('');
+    const [localFaviconUrl, setLocalFaviconUrl] = useState('');
     const [pixDiscount, setPixDiscount] = useState<PixDiscountSettings>({ enabled: true, percentage: 5 });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [uploadingFavicon, setUploadingFavicon] = useState(false);
 
     useEffect(() => {
         fetchSettings();
         setLocalTestUrl(testButtonUrl);
         setLocalWhatsappUrl(whatsappUrl);
-    }, [testButtonUrl, whatsappUrl]);
+        setLocalWhatsappGroupUrl(whatsappGroupUrl);
+        setLocalLogoUrl(logoUrl);
+        setLocalFaviconUrl(faviconUrl);
+    }, [testButtonUrl, whatsappUrl, whatsappGroupUrl, logoUrl, faviconUrl]);
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'favicon') => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            setError('Por favor, selecione apenas arquivos de imagem.');
+            return;
+        }
+
+        // Validate file size (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            setError('O arquivo deve ter no máximo 2MB.');
+            return;
+        }
+
+        const setLoading = type === 'logo' ? setUploadingLogo : setUploadingFavicon;
+        const setUrl = type === 'logo' ? setLocalLogoUrl : setLocalFaviconUrl;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${type}-${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError, data } = await supabase.storage
+                .from('site-assets')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('site-assets')
+                .getPublicUrl(filePath);
+
+            setUrl(publicUrl);
+        } catch (err: any) {
+            console.error('Error uploading file:', err);
+            setError('Erro ao fazer upload da imagem. Tente novamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const fetchSettings = async () => {
         setLoading(true);
@@ -72,6 +126,9 @@ const Settings: React.FC = () => {
             // Save URLs
             await updateTestButtonUrl(localTestUrl);
             await updateWhatsappUrl(localWhatsappUrl);
+            await updateWhatsappGroupUrl(localWhatsappGroupUrl);
+            await updateLogoUrl(localLogoUrl);
+            await updateFaviconUrl(localFaviconUrl);
         } catch (err: any) {
             console.error('Error saving settings:', err);
             setError(err.message);
@@ -241,6 +298,141 @@ const Settings: React.FC = () => {
                         <p className="text-xs text-slate-500 mt-2">
                             Botão flutuante do WhatsApp (canto inferior direito)
                         </p>
+                    </div>
+
+                    {/* WhatsApp Group URL */}
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-green-600" />
+                            Link do Grupo de Promoção (WhatsApp)
+                        </label>
+                        <input
+                            type="url"
+                            value={localWhatsappGroupUrl}
+                            onChange={(e) => setLocalWhatsappGroupUrl(e.target.value)}
+                            placeholder="https://chat.whatsapp.com/..."
+                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                        <p className="text-xs text-slate-500 mt-2">
+                            Link do botão na página de "Obrigado"
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Visual Identity Settings */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-purple-600" />
+                        Identidade Visual
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Personalize o logo e o favicon do site
+                    </p>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* Logo URL */}
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                            Logo do Site
+                        </label>
+                        <div className="space-y-4">
+                            {/* Upload Input */}
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Fazer Upload</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleFileUpload(e, 'logo')}
+                                    disabled={uploadingLogo}
+                                    className="block w-full text-sm text-slate-500
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-full file:border-0
+                                        file:text-sm file:font-semibold
+                                        file:bg-primary/10 file:text-primary
+                                        hover:file:bg-primary/20
+                                        cursor-pointer"
+                                />
+                                {uploadingLogo && <span className="text-xs text-primary mt-1 block">Enviando...</span>}
+                            </div>
+
+                            {/* Manual URL Input */}
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Ou insira a URL manualmente</label>
+                                <div className="flex gap-4 items-start">
+                                    <div className="flex-1">
+                                        <input
+                                            type="url"
+                                            value={localLogoUrl}
+                                            onChange={(e) => setLocalLogoUrl(e.target.value)}
+                                            placeholder="https://exemplo.com/logo.png"
+                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        />
+                                        <p className="text-xs text-slate-500 mt-2">
+                                            Recomendado: Imagem PNG com fundo transparente (max-height: 40px)
+                                        </p>
+                                    </div>
+                                    {localLogoUrl && (
+                                        <div className="p-2 bg-slate-100 rounded border border-slate-200">
+                                            <img src={localLogoUrl} alt="Preview Logo" className="h-10 w-auto object-contain" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Favicon URL */}
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                            Favicon do Site
+                        </label>
+                        <div className="space-y-4">
+                            {/* Upload Input */}
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Fazer Upload</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleFileUpload(e, 'favicon')}
+                                    disabled={uploadingFavicon}
+                                    className="block w-full text-sm text-slate-500
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-full file:border-0
+                                        file:text-sm file:font-semibold
+                                        file:bg-primary/10 file:text-primary
+                                        hover:file:bg-primary/20
+                                        cursor-pointer"
+                                />
+                                {uploadingFavicon && <span className="text-xs text-primary mt-1 block">Enviando...</span>}
+                            </div>
+
+                            {/* Manual URL Input */}
+                            <div>
+                                <label className="block text-xs text-slate-500 mb-1">Ou insira a URL manualmente</label>
+                                <div className="flex gap-4 items-start">
+                                    <div className="flex-1">
+                                        <input
+                                            type="url"
+                                            value={localFaviconUrl}
+                                            onChange={(e) => setLocalFaviconUrl(e.target.value)}
+                                            placeholder="https://exemplo.com/favicon.ico"
+                                            className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        />
+                                        <p className="text-xs text-slate-500 mt-2">
+                                            Ícone que aparece na aba do navegador (recomendado .ico ou .png 32x32)
+                                        </p>
+                                    </div>
+                                    {localFaviconUrl && (
+                                        <div className="p-2 bg-slate-100 rounded border border-slate-200">
+                                            <img src={localFaviconUrl} alt="Preview Favicon" className="w-8 h-8 object-contain" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
