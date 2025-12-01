@@ -266,7 +266,7 @@ app.post('/api/webhook/pushinpay', async (req, res) => {
         // Process webhook asynchronously
         // The payload from PushinPay seems to contain 'transaction_id' which corresponds to our 'pix_id'
         // It might not contain 'status', so we should verify with the API to be sure.
-        const pixId = req.body.transaction_id || req.body.id;
+        const pixId = (req.body.transaction_id || req.body.id || '').toLowerCase(); // Convert to lowercase for DB search
 
         if (pixId) {
             console.log(`[PushinPay Webhook] Processing webhook for PIX ID: ${pixId}`);
