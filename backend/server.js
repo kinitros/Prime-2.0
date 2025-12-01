@@ -29,6 +29,15 @@ app.use(express.json());
 const pushInPayService = new PushInPayService(process.env.PUSHIN_PAY_TOKEN || '');
 const supabaseService = new SupabaseService();
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        message: 'Server is running',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Create PIX Charge
 app.post('/api/pix/create', async (req, res) => {
     try {
