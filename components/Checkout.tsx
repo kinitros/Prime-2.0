@@ -337,8 +337,12 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
           // Start polling with the new order_id
           const pollInterval = setInterval(async () => {
             try {
+              console.log('Checking payment status for:', response.data.order_id);
               const statusResponse = await checkPaymentStatus(response.data.order_id);
+              console.log('Status Response:', statusResponse);
+
               if (statusResponse.success && statusResponse.data.status === 'paid') {
+                console.log('Payment confirmed! Redirecting...');
                 setPaymentStatus('paid');
                 clearInterval(pollInterval);
 
