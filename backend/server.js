@@ -284,7 +284,12 @@ app.post('/api/webhook/pushinpay', async (req, res) => {
                 // Still return 200 to avoid retries
                 res.status(200).json({ success: false, error: error.message });
             }
-        });
+        }
+    } catch (error) {
+        console.error('[PushinPay Webhook] Error:', error);
+        // Since we already responded 200, just log the error
+    }
+});
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
