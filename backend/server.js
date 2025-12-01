@@ -259,42 +259,58 @@ app.post('/api/webhook/pushinpay', async (req, res) => {
         res.status(200).json({ success: true, message: 'Webhook received' });
 
         // Process webhook asynchronously
-        if (status === 'paid' && id) {
-            console.log(`[PushinPay Webhook] Payment confirmed for PIX ID: ${id}`);
+        // The payload from PushinPay seems to contain 'transaction_id' which corresponds to our 'pix_id'
+        // It might not contain 'status', so we should verify with the API to be sure.
+        const pixId = req.body.transaction_id || req.body.id;
 
-            // Find transaction by pix_id
+        if (pixId) {
+            console.log(`[PushinPay Webhook] Processing webhook for PIX ID: ${pixId}`);
+
+            // 1. Find transaction by pix_id in our DB
             const { data: transactions, error } = await supabaseService.supabase
                 .from('transactions')
                 .select('*')
-                .eq('pix_id', id)
+                .eq('pix_id', pixId)
                 .limit(1);
 
             if (error || !transactions || transactions.length === 0) {
-                console.error('[PushinPay Webhook] Transaction not found for pix_id:', id);
+                console.error('[PushinPay Webhook] Transaction not found for pix_id:', pixId);
                 return;
             }
 
             const transaction = transactions[0];
+            console.log(`[PushinPay Webhook] Found transaction ${transaction.order_id}`);
 
-            // Update transaction status
-            const updateResult = await supabaseService.updateTransaction(transaction.order_id, {
-                status: 'paid',
-                paid_at: paid_at || new Date().toISOString(),
-            });
+            // 2. Verify status with PushinPay API to be sure and get details
+            const pixStatus = await pushInPayService.checkPixStatus(pixId);
 
-            if (updateResult.success) {
-                console.log(`[PushinPay Webhook] Transaction ${transaction.order_id} marked as paid`);
+            if (pixStatus.success && pixStatus.data && pixStatus.data.status === 'paid') {
+                console.log(`[PushinPay Webhook] Payment confirmed via API for PIX ID: ${pixId}`);
 
-                // Trigger internal webhook
-                webhookService.trigger('order.approved', {
-                    order_id: transaction.order_id,
+                // 3. Update transaction status
+                const updateResult = await supabaseService.updateTransaction(transaction.order_id, {
                     status: 'paid',
-                    approved_at: paid_at || new Date().toISOString(),
-                    pix_id: id
+                    paid_at: pixStatus.data.paid_at || new Date().toISOString(),
                 });
+
+                if (updateResult.success) {
+                    console.log(`[PushinPay Webhook] Transaction ${transaction.order_id} marked as paid`);
+
+                    // Trigger internal webhook
+                    webhookService.trigger('order.approved', {
+                        order_id: transaction.order_id,
+                        status: 'paid',
+                        approved_at: pixStatus.data.paid_at || new Date().toISOString(),
+                        pix_id: pixId
+                    });
+                } else {
+                    console.error('[PushinPay Webhook] Failed to update transaction:', updateResult.error);
+                }
             } else {
-                console.error('[PushinPay Webhook] Failed to update transaction:', updateResult.error);
+                console.log(`[PushinPay Webhook] Payment status from API is not 'paid': ${pixStatus.data?.status}`);
             }
+        } else {
+            console.log('[PushinPay Webhook] No transaction_id or id found in payload');
         }
     } catch (error) {
         console.error('[PushinPay Webhook] Error processing webhook:', error);
