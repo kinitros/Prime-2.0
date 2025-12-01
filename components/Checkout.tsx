@@ -953,7 +953,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
 
               <div className="bg-white p-4 border-2 border-slate-100 rounded-xl mb-6 inline-block">
                 <img
-                  src={`data:image/png;base64,${pixData.qr_code_base64}`}
+                  src={pixData.qr_code_base64.startsWith('data:image') ? pixData.qr_code_base64 : `data:image/png;base64,${pixData.qr_code_base64}`}
                   alt="QR Code Pix"
                   className="w-48 h-48"
                 />
