@@ -152,7 +152,8 @@ app.post('/api/pix/create', async (req, res) => {
                 service_type,
                 quantity,
                 unit_price,
-                total_amount
+                total_amount,
+                link: profile_username || instagram_username
             }],
             payment: {
                 method: 'pix',
@@ -224,7 +225,10 @@ app.get('/api/pix/status/:orderId', async (req, res) => {
                         webhookService.trigger('order.approved', {
                             order_id: orderId,
                             status: 'paid',
-                            approved_at: new Date().toISOString()
+                            approved_at: new Date().toISOString(),
+                            items: [{
+                                link: transaction.data.link || transaction.data.instagram_username
+                            }]
                         });
                     }
                 }
@@ -301,7 +305,10 @@ app.post('/api/webhook/pushinpay', async (req, res) => {
                         order_id: transaction.order_id,
                         status: 'paid',
                         approved_at: new Date().toISOString(),
-                        pix_id: pixId
+                        pix_id: pixId,
+                        items: [{
+                            link: transaction.link || transaction.instagram_username
+                        }]
                     });
                 } else {
                     console.error('[PushinPay Webhook] Failed to update transaction:', updateResult.error);
