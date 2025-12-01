@@ -17,7 +17,7 @@ class PushInPayService {
             // Payload exactly as API documentation shows
             const payload = {
                 value: valueInCentavos,
-                webhook_url: process.env.WEBHOOK_URL || 'https://webhook.site/your-webhook-url',
+                webhook_url: process.env.WEBHOOK_URL || `${process.env.BACKEND_URL || 'http://localhost:3001'}/api/webhook/pushinpay`,
                 split_rules: []
             };
 

@@ -227,6 +227,61 @@ app.get('/api/pix/status/:orderId', async (req, res) => {
     }
 });
 
+// Webhook endpoint to receive PushinPay notifications
+app.post('/api/webhook/pushinpay', async (req, res) => {
+    try {
+        console.log('[PushinPay Webhook] Received webhook:', JSON.stringify(req.body, null, 2));
+
+        const { id, status, paid_at, order_id } = req.body;
+
+        // Acknowledge receipt immediately
+        res.status(200).json({ success: true, message: 'Webhook received' });
+
+        // Process webhook asynchronously
+        if (status === 'paid' && id) {
+            console.log(`[PushinPay Webhook] Payment confirmed for PIX ID: ${id}`);
+
+            // Find transaction by pix_id
+            const { data: transactions, error } = await supabaseService.supabase
+                .from('transactions')
+                .select('*')
+                .eq('pix_id', id)
+                .limit(1);
+
+            if (error || !transactions || transactions.length === 0) {
+                console.error('[PushinPay Webhook] Transaction not found for pix_id:', id);
+                return;
+            }
+
+            const transaction = transactions[0];
+
+            // Update transaction status
+            const updateResult = await supabaseService.updateTransaction(transaction.order_id, {
+                status: 'paid',
+                paid_at: paid_at || new Date().toISOString(),
+            });
+
+            if (updateResult.success) {
+                console.log(`[PushinPay Webhook] Transaction ${transaction.order_id} marked as paid`);
+
+                // Trigger internal webhook
+                webhookService.trigger('order.approved', {
+                    order_id: transaction.order_id,
+                    status: 'paid',
+                    approved_at: paid_at || new Date().toISOString(),
+                    pix_id: id
+                });
+            } else {
+                console.error('[PushinPay Webhook] Failed to update transaction:', updateResult.error);
+            }
+        }
+    } catch (error) {
+        console.error('[PushinPay Webhook] Error processing webhook:', error);
+        // Still return 200 to avoid retries
+        res.status(200).json({ success: false, error: error.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
