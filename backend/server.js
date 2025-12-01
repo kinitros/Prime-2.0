@@ -268,7 +268,7 @@ app.post('/api/webhook/pushinpay', async (req, res) => {
 
             // 1. Find transaction by pix_id in our DB
             const { data: transactions, error } = await supabaseService.supabase
-                .from('transactions')
+                .from('orders')
                 .select('*')
                 .eq('pix_id', pixId)
                 .limit(1);
