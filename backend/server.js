@@ -24,6 +24,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Parse form-urlencoded data
 
 // Initialize Services
 const pushInPayService = new PushInPayService(process.env.PUSHIN_PAY_TOKEN || '');
