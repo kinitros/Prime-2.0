@@ -3,7 +3,7 @@ const axios = require('axios');
 class PushInPayService {
     constructor(token) {
         this.token = token;
-        this.baseUrl = 'https://api.pushinpay.com.br';
+        this.baseUrl = 'https://api.pushinpay.com.br/api';
     }
 
     async createPixCharge(data) {
