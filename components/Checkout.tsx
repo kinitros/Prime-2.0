@@ -176,6 +176,24 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
     : 0;
   const total = subtotal - pixDiscount;
 
+  // Calculate total quantity including order bumps
+  const getTotalQuantity = (): number => {
+    let totalQty = selectedPackage.quantity;
+
+    // Add quantities from selected order bumps
+    orderBumps
+      .filter(bump => selectedBumps.includes(bump.id))
+      .forEach(bump => {
+        // Extract quantity from bump title (e.g., "Leve mais 100 Curtidas" -> 100)
+        const match = bump.title.match(/(\d+)/);
+        if (match) {
+          totalQty += parseInt(match[1]);
+        }
+      });
+
+    return totalQty;
+  };
+
   // Note: Payment status polling is now handled directly in handlePayment
   // This prevents duplicate polling and ensures we have the correct order_id
 
@@ -553,7 +571,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                       </div>
                       <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3 text-green-500" />
-                        Receberão <strong>{Math.floor(selectedPackage.quantity / selectedPosts.length)}</strong> {offer.type === 'likes' ? 'curtidas' : 'views'} cada.
+                        Receberão <strong>{Math.floor(getTotalQuantity() / selectedPosts.length)}</strong> {offer.type === 'likes' ? 'curtidas' : 'views'} cada.
                       </div>
                     </div>
                   ) : (
@@ -616,7 +634,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                         ))}
                         <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3 text-green-500" />
-                          Receberão <strong>{Math.floor(selectedPackage.quantity / videoLinks.length)}</strong> {offer.type === 'likes' ? 'curtidas' : 'views'} cada.
+                          Receberão <strong>{Math.floor(getTotalQuantity() / videoLinks.length)}</strong> {offer.type === 'likes' ? 'curtidas' : 'views'} cada.
                         </div>
                       </div>
                     )}
