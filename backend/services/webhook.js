@@ -12,18 +12,29 @@ class WebhookService {
         try {
             console.log(`[Webhook] Triggering event: ${event}`);
 
-            // Fetch active webhooks that are subscribed to this event
-            // We'll fetch all active webhooks and filter in code for simplicity with JSONB
-            // or we can use a postgres query if we structure it right. 
-            // For now, let's fetch all active and filter.
-            const { data: webhooks, error } = await this.supabase
-                .from('webhooks')
-                .select('*')
-                .eq('is_active', true);
+            // Tenta buscar via RPC (seguro) primeiro, fallback para SELECT normal
+            let webhooks = [];
+            
+            // Tentativa 1: RPC (recomendado para contornar RLS)
+            const { data: rpcData, error: rpcError } = await this.supabase
+                .rpc('get_active_webhooks');
 
-            if (error) {
-                console.error('[Webhook] Error fetching webhooks:', error);
-                return;
+            if (!rpcError && rpcData) {
+                webhooks = rpcData;
+            } else {
+                // Tentativa 2: Select direto (funciona se RLS permitir ou usar Service Key)
+                if (rpcError) console.log('[Webhook] RPC get_active_webhooks not found or error, trying direct select...');
+                
+                const { data: selectData, error: selectError } = await this.supabase
+                    .from('webhooks')
+                    .select('*')
+                    .eq('is_active', true);
+
+                if (selectError) {
+                    console.error('[Webhook] Error fetching webhooks:', selectError);
+                    return;
+                }
+                webhooks = selectData || [];
             }
 
             if (!webhooks || webhooks.length === 0) {
