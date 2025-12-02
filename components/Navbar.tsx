@@ -36,12 +36,14 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <button className="text-slate-600 hover:text-primary text-sm font-medium">
-              Entrar
-            </button>
-            <button className="bg-brand-gradient hover:opacity-90 text-white px-5 py-2.5 rounded-xl transition-all duration-200 font-bold text-sm shadow-[0_4px_14px_0_rgba(123,97,255,0.39)]">
-              Começar Grátis
-            </button>
+            <a 
+              href="https://seguidoresprimer.com/whatsapp-prime-teste"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-brand-gradient hover:opacity-90 text-white px-5 py-2.5 rounded-xl transition-all duration-200 font-bold text-sm shadow-[0_4px_14px_0_rgba(123,97,255,0.39)]"
+            >
+              Teste por R$5,90
+            </a>
           </div>
 
           <div className="-mr-2 flex md:hidden">
@@ -63,7 +65,14 @@ const Navbar: React.FC = () => {
             <a href="#services" className="block px-3 py-4 text-center text-base font-medium text-slate-600 hover:text-primary border-b border-slate-100">Soluções</a>
             <a href="#benefits" className="block px-3 py-4 text-center text-base font-medium text-slate-600 hover:text-primary">Empresas</a>
             <div className="p-4">
-              <button className="w-full bg-primary text-white py-3 rounded-lg font-bold shadow-lg">Começar Agora</button>
+              <a 
+                href="https://seguidoresprimer.com/whatsapp-prime-teste"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full block text-center bg-primary text-white py-3 rounded-lg font-bold shadow-lg"
+              >
+                Teste por R$5,90
+              </a>
             </div>
           </div>
         </div>

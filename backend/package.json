@@ -1,7 +1,7 @@
 {
-    "name": "impulso-backend",
+    "name": "seguidores-prime-backend",
     "version": "1.0.0",
-    "description": "Backend for Impulso Premium payment processing",
+    "description": "Backend for Seguidores Prime payment processing",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",

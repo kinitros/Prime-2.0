@@ -5,6 +5,7 @@ import PlatformCard from './components/PlatformCard';
 import Features from './components/Features';
 import Footer from './components/Footer';
 import BusinessServices from './components/BusinessServices';
+import VideoTestimonials from './components/VideoTestimonials';
 import FOMONotifications from './components/FOMONotifications';
 import WhatsAppFloat from './components/WhatsAppFloat';
 import Modal from './components/Modal';
@@ -371,6 +372,8 @@ const MainApp: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <VideoTestimonials />
 
       <BusinessServices />
 
