@@ -83,6 +83,10 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
 
   // Default to the first package or the one that matches the starting price if possible
   const [selectedPackage, setSelectedPackage] = useState<Product>(packages[0] || { quantity: 0, price: 0, originalPrice: 0, id: 'default' });
+  
+  // Calculate prices based on selected package and selected bumps - MOVED UP to fix initialization error
+  const orderBumps = selectedPackage.order_bumps || [];
+  
   const [hasOrderBump, setHasOrderBump] = useState(false);
   const [selectedBumps, setSelectedBumps] = useState<string[]>([]); // Array of selected bump IDs
 
@@ -94,19 +98,43 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
   const [videoLinks, setVideoLinks] = useState<string[]>([]);
   const [currentVideoLink, setCurrentVideoLink] = useState('');
 
-  // Determine which input method to show
-  const needsPostSelector = (offer.type === 'likes' || offer.type === 'views') &&
-    (platform.id === 'instagram' || platform.id === 'tiktok' || platform.id === 'youtube') && profileData;
+  // Determine which input method to show - Old logic removed
+  /* const needsPostSelector = (offer.type === 'likes' || offer.type === 'views') &&
+    (platform.id === 'instagram' || platform.id === 'tiktok' || platform.id === 'youtube') && profileData; */
 
   const needsVideoLink = (offer.type === 'likes' || offer.type === 'views') &&
     platform.id === 'kwai'; // Only Kwai uses manual video links now
 
   const needsManualProfileLink = platform.id === 'facebook' || platform.id === 'twitter';
 
+  // Check for engagement bumps
+  const hasEngagementBump = selectedBumps.some(id => {
+    const bump = orderBumps.find(b => b.id === id);
+    const title = bump?.title.toLowerCase() || '';
+    return title.includes('curtidas') || title.includes('likes') || title.includes('views') || title.includes('visualizações');
+  });
+
+  const hasViewsBump = selectedBumps.some(id => {
+    const bump = orderBumps.find(b => b.id === id);
+    const title = bump?.title.toLowerCase() || '';
+    return title.includes('views') || title.includes('visualizações');
+  });
+
+  // Determine which input method to show - Updated to include bumps
+  const needsPostSelector = ((offer.type === 'likes' || offer.type === 'views') || hasEngagementBump) &&
+    (platform.id === 'instagram' || platform.id === 'tiktok' || platform.id === 'youtube') && profileData;
+
   // Reset order bump when package changes
   useEffect(() => {
     setHasOrderBump(false);
   }, [selectedPackage]);
+
+  // Auto-open post selector when engagement bump is selected
+  useEffect(() => {
+    if (hasEngagementBump && selectedPosts.length === 0 && !isPostSelectorOpen && needsPostSelector) {
+      setIsPostSelectorOpen(true);
+    }
+  }, [hasEngagementBump]); // Only trigger when hasEngagementBump changes state
 
   // DataLayer: Begin Checkout
   useEffect(() => {
@@ -164,8 +192,8 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
     fetchSettings();
   }, []);
 
-  // Calculate prices based on selected package and selected bumps
-  const orderBumps = selectedPackage.order_bumps || [];
+  // Calculate prices based on selected package and selected bumps - REMOVED (Moved up)
+  /* const orderBumps = selectedPackage.order_bumps || []; */
   const selectedBumpsTotal = orderBumps
     .filter(bump => selectedBumps.includes(bump.id))
     .reduce((sum, bump) => sum + bump.price, 0);
@@ -233,8 +261,24 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
     if (needsPostSelector) {
       if (selectedPosts.length === 0) {
         console.log('Validation failed: No posts selected');
-        alert("Por favor, selecione pelo menos uma postagem.");
+        alert("Por favor, selecione pelo menos uma postagem para receber as curtidas ou visualizações.");
         return;
+      }
+
+      // Validate if views bump is present, ensure video is selected
+      if (hasViewsBump || offer.type === 'views') {
+        const hasVideo = selectedPosts.some(post => {
+          if (platform.id === 'instagram') {
+            return (post as InstagramPost).media_type === 2;
+          }
+          // TikTok and YouTube are always videos
+          return true;
+        });
+
+        if (!hasVideo) {
+          alert('Você adicionou Visualizações, mas selecionou apenas fotos. Por favor, selecione pelo menos um vídeo (Reel).');
+          return;
+        }
       }
     } else if (needsVideoLink) {
       if (videoLinks.length === 0) {
@@ -284,7 +328,8 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
           return {
             post_url: postUrl,
             post_id: 'id' in post ? post.id : (post as YouTubeVideo).video_id,
-            quantity_per_post: Math.floor(selectedPackage.quantity / selectedPosts.length)
+            quantity_per_post: Math.floor(selectedPackage.quantity / selectedPosts.length),
+            media_type: 'media_type' in post ? (post as InstagramPost).media_type : 2 // Default to 2 (video) for others
           };
         }) : [];
 

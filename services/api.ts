@@ -83,6 +83,7 @@ export interface InstagramPost {
     likes: number;
     comments: number;
     timestamp: number;
+    media_type?: number; // 1: Image, 2: Video, 8: Carousel
 }
 
 export const fetchInstagramPosts = async (username: string, onlyReels: boolean = false): Promise<InstagramPost[]> => {
@@ -127,7 +128,8 @@ export const fetchInstagramPosts = async (username: string, onlyReels: boolean =
                     caption: media.caption?.text || '',
                     likes: media.like_count || 0,
                     comments: media.comment_count || 0,
-                    timestamp: media.taken_at || Date.now() / 1000 // Fallback timestamp
+                    timestamp: media.taken_at || Date.now() / 1000, // Fallback timestamp
+                    media_type: 2 // Reels are always videos
                 };
             });
         } else {
@@ -139,7 +141,8 @@ export const fetchInstagramPosts = async (username: string, onlyReels: boolean =
                 caption: item.caption?.text || '',
                 likes: item.like_count,
                 comments: item.comment_count,
-                timestamp: item.taken_at
+                timestamp: item.taken_at,
+                media_type: item.media_type // Capture media_type from API
             }));
         }
 
