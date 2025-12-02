@@ -355,7 +355,34 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
       }
 
       if (formData.paymentMethod === 'pix') {
-        // Prepare selected posts data
+        // Calculate total quantities per service type
+        let totalLikes = 0;
+        let totalViews = 0;
+        let totalFollowers = 0; // Not distributed to posts, but good to track
+
+        // 1. Add Main Product Quantity
+        if (offer.type === 'likes') totalLikes += selectedPackage.quantity;
+        else if (offer.type === 'views') totalViews += selectedPackage.quantity;
+        else if (offer.type === 'followers') totalFollowers += selectedPackage.quantity;
+
+        // 2. Add Order Bumps Quantities
+        orderBumps
+          .filter(b => selectedBumps.includes(b.id))
+          .forEach(bump => {
+            const title = bump.title.toLowerCase();
+            const match = bump.title.match(/(\d+)/);
+            const qty = match ? parseInt(match[1]) : 0;
+
+            if (title.includes('curtidas') || title.includes('likes')) {
+              totalLikes += qty;
+            } else if (title.includes('visualizações') || title.includes('views') || title.includes('visualizacoes')) {
+              totalViews += qty;
+            } else if (title.includes('seguidores') || title.includes('followers')) {
+              totalFollowers += qty;
+            }
+          });
+
+        // Prepare selected posts data with specific service breakdown
         const selectedPostsData = selectedPosts.length > 0 ? selectedPosts.map(post => {
           const postUrl = platform.id === 'instagram'
             ? `https://www.instagram.com/p/${(post as InstagramPost).shortcode}/`
@@ -365,11 +392,18 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                 ? `https://www.youtube.com/watch?v=${(post as YouTubeVideo).video_id}`
                 : '';
 
+          // Distribute totals among selected posts
+          const likesPerPost = totalLikes > 0 ? Math.floor(totalLikes / selectedPosts.length) : 0;
+          const viewsPerPost = totalViews > 0 ? Math.floor(totalViews / selectedPosts.length) : 0;
+
           return {
             post_url: postUrl,
             post_id: 'id' in post ? post.id : (post as YouTubeVideo).video_id,
-            quantity_per_post: Math.floor(selectedPackage.quantity / selectedPosts.length),
-            media_type: 'media_type' in post ? (post as InstagramPost).media_type : 2 // Default to 2 (video) for others
+            media_type: 'media_type' in post ? (post as InstagramPost).media_type : 2,
+            services: {
+              likes: likesPerPost,
+              views: viewsPerPost
+            }
           };
         }) : [];
 

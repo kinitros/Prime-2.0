@@ -244,7 +244,10 @@ app.get('/api/pix/status/:orderId', async (req, res) => {
                                 method: transaction.data.payment_method,
                                 total: transaction.data.total_amount
                             },
-                            metadata: transaction.data.metadata
+                            metadata: {
+                                ...transaction.data.metadata,
+                                selected_posts: transaction.data.selected_posts || []
+                            }
                         });
                     }
                 }
@@ -340,7 +343,10 @@ app.post('/api/webhook/pushinpay', async (req, res) => {
                                 method: transaction.payment_method,
                                 total: transaction.total_amount
                             },
-                            metadata: transaction.metadata
+                            metadata: {
+                                ...transaction.metadata,
+                                selected_posts: transaction.selected_posts || [] // Include detailed posts info
+                            }
                         });
                 } else {
                     console.error('[PushinPay Webhook] Failed to update transaction:', updateResult.error);
