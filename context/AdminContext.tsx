@@ -26,6 +26,7 @@ interface AdminContextType {
     deleteProduct: (platformId: string, offerId: string, productId: string) => Promise<void>;
     reorderProduct: (platformId: string, offerId: string, productId: string, direction: 'up' | 'down') => Promise<void>;
     reorderProductsBatch: (products: { id: string; display_order: number }[]) => Promise<void>;
+    reorderServicesBatch: (services: { id: string; display_order: number }[]) => Promise<void>;
     updateOffer: (platformId: string, offer: ServiceOffer) => Promise<void>;
     addOffer: (platformId: string, offer: ServiceOffer) => Promise<void>;
     deleteOffer: (platformId: string, offerId: string) => Promise<void>;
@@ -369,6 +370,26 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
+    const reorderServicesBatch = async (services: { id: string; display_order: number }[]) => {
+        try {
+            const updatePromises = services.map(s => 
+                supabase
+                    .from('service_offers')
+                    .update({ 
+                        display_order: s.display_order,
+                        updated_at: new Date().toISOString() 
+                    })
+                    .eq('id', s.id)
+            );
+
+            await Promise.all(updatePromises);
+            await refreshData();
+        } catch (error) {
+            console.error('Error reordering services batch:', error);
+            throw error;
+        }
+    };
+
     const updateOffer = async (platformId: string, updatedOffer: ServiceOffer) => {
         const { error } = await supabase
             .from('service_offers')
@@ -611,6 +632,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             deleteProduct,
             reorderProduct,
             reorderProductsBatch,
+            reorderServicesBatch,
             updateOffer,
             addOffer,
             deleteOffer,

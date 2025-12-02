@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { PlatformId, Product, ServiceOffer, OrderBump } from '../../types';
-import { Plus, Trash2, Edit2, Save, X, ArrowLeft, LogOut, LayoutGrid, Users, Globe, SettingsIcon, UserPlus, Heart, Eye, Target, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, ArrowLeft, LogOut, LayoutGrid, Users, Globe, SettingsIcon, UserPlus, Heart, Eye, Target, GripVertical, GripHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -11,7 +11,7 @@ import Settings from './Settings';
 import Pixels from './Pixels';
 
 const AdminDashboard: React.FC = () => {
-    const { platforms, updateProduct, addProduct, deleteProduct, reorderProduct, reorderProductsBatch, addOffer, updateOffer, deleteOffer, addOrderBump, updateOrderBump, deleteOrderBump, isLoading: isDataLoading } = useAdmin();
+    const { platforms, updateProduct, addProduct, deleteProduct, reorderProduct, reorderProductsBatch, reorderServicesBatch, addOffer, updateOffer, deleteOffer, addOrderBump, updateOrderBump, deleteOrderBump, isLoading: isDataLoading } = useAdmin();
     const [selectedPlatformId, setSelectedPlatformId] = useState<PlatformId>(PlatformId.INSTAGRAM);
     const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -21,6 +21,7 @@ const AdminDashboard: React.FC = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [localProducts, setLocalProducts] = useState<Product[]>([]);
+    const [localOffers, setLocalOffers] = useState<ServiceOffer[]>([]);
 
     // Default new product state
     const [newProduct, setNewProduct] = useState<Partial<Product>>({
@@ -52,6 +53,12 @@ const AdminDashboard: React.FC = () => {
 
     const selectedPlatform = platforms.find(p => p.id === selectedPlatformId);
     const selectedOffer = selectedPlatform?.offers.find(o => o.id === selectedOfferId);
+
+    useEffect(() => {
+        if (selectedPlatform) {
+            setLocalOffers(selectedPlatform.offers);
+        }
+    }, [selectedPlatform]);
 
     useEffect(() => {
         if (selectedOffer) {
@@ -97,11 +104,17 @@ const AdminDashboard: React.FC = () => {
     const handleDragEnd = (result: DropResult) => {
         if (!result.destination) return;
 
-        const items = Array.from(localProducts);
-        const [reorderedItem] = items.splice(result.source.index, 1);
-        items.splice(result.destination.index, 0, reorderedItem);
-
-        setLocalProducts(items);
+        if (result.type === 'SERVICE') {
+            const items = Array.from(localOffers);
+            const [reorderedItem] = items.splice(result.source.index, 1);
+            items.splice(result.destination.index, 0, reorderedItem);
+            setLocalOffers(items);
+        } else {
+            const items = Array.from(localProducts);
+            const [reorderedItem] = items.splice(result.source.index, 1);
+            items.splice(result.destination.index, 0, reorderedItem);
+            setLocalProducts(items);
+        }
     };
 
     const handleSaveOrder = async () => {
@@ -111,6 +124,15 @@ const AdminDashboard: React.FC = () => {
         }));
         await reorderProductsBatch(productsToUpdate);
         alert('Ordem dos produtos salva com sucesso!');
+    };
+
+    const handleSaveServiceOrder = async () => {
+        const servicesToUpdate = localOffers.map((s, index) => ({
+            id: s.id,
+            display_order: index
+        }));
+        await reorderServicesBatch(servicesToUpdate);
+        alert('Ordem dos serviços salva com sucesso!');
     };
 
     const handleSaveProduct = () => {
@@ -265,19 +287,54 @@ const AdminDashboard: React.FC = () => {
                                 <h2 className="text-2xl font-bold text-slate-900 mb-6">{selectedPlatform.name} - Gerenciar Produtos</h2>
 
                                 {/* Category Tabs */}
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-sm font-bold text-slate-500 uppercase">Serviços</h3>
+                                    <button
+                                        onClick={handleSaveServiceOrder}
+                                        className="text-xs flex items-center gap-1 bg-white text-primary border border-primary px-3 py-1 rounded hover:bg-primary/5 transition-colors"
+                                    >
+                                        <Save className="w-3 h-3" /> Salvar Ordem
+                                    </button>
+                                </div>
                                 <div className="flex gap-4 mb-8 border-b border-slate-200 pb-1 items-center overflow-x-auto">
-                                    {selectedPlatform.offers.map(offer => (
-                                        <button
-                                            key={offer.id}
-                                            onClick={() => setSelectedOfferId(offer.id)}
-                                            className={`pb-3 px-2 font-medium text-sm transition-colors relative whitespace-nowrap ${selectedOfferId === offer.id ? 'text-primary' : 'text-slate-500 hover:text-slate-700'}`}
-                                        >
-                                            {offer.title}
-                                            {selectedOfferId === offer.id && (
-                                                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />
+                                    <DragDropContext onDragEnd={handleDragEnd}>
+                                        <Droppable droppableId="services" direction="horizontal" type="SERVICE">
+                                            {(provided) => (
+                                                <div
+                                                    {...provided.droppableProps}
+                                                    ref={provided.innerRef}
+                                                    className="flex gap-2 items-center"
+                                                >
+                                                    {localOffers.map((offer, index) => (
+                                                        <Draggable key={offer.id} draggableId={offer.id} index={index}>
+                                                            {(provided, snapshot) => (
+                                                                <div
+                                                                    ref={provided.innerRef}
+                                                                    {...provided.draggableProps}
+                                                                    {...provided.dragHandleProps}
+                                                                    style={{ ...provided.draggableProps.style }}
+                                                                    onClick={() => setSelectedOfferId(offer.id)}
+                                                                    className={`
+                                                                        group flex items-center gap-2 pb-3 px-2 font-medium text-sm transition-colors relative whitespace-nowrap cursor-grab active:cursor-grabbing
+                                                                        ${selectedOfferId === offer.id ? 'text-primary' : 'text-slate-500 hover:text-slate-700'}
+                                                                        ${snapshot.isDragging ? 'bg-white shadow-lg rounded-lg p-2 border border-slate-200' : ''}
+                                                                    `}
+                                                                >
+                                                                    <GripVertical className={`w-3 h-3 ${selectedOfferId === offer.id ? 'text-primary/30' : 'text-slate-300'} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                                                    {offer.title}
+                                                                    {selectedOfferId === offer.id && !snapshot.isDragging && (
+                                                                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </Draggable>
+                                                    ))}
+                                                    {provided.placeholder}
+                                                </div>
                                             )}
-                                        </button>
-                                    ))}
+                                        </Droppable>
+                                    </DragDropContext>
+
                                     {selectedOfferId && (
                                         <button
                                             onClick={() => {
