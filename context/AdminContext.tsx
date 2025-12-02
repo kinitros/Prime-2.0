@@ -349,17 +349,19 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const reorderProductsBatch = async (products: { id: string; display_order: number }[]) => {
         try {
-            const updates = products.map(p => ({
-                id: p.id,
-                display_order: p.display_order,
-                updated_at: new Date().toISOString()
-            }));
+            // Using parallel updates instead of upsert to avoid "missing fields" error
+            // This is safe and fast enough for the number of products we handle
+            const updatePromises = products.map(p => 
+                supabase
+                    .from('products')
+                    .update({ 
+                        display_order: p.display_order,
+                        updated_at: new Date().toISOString() 
+                    })
+                    .eq('id', p.id)
+            );
 
-            const { error } = await supabase
-                .from('products')
-                .upsert(updates, { onConflict: 'id' });
-
-            if (error) throw error;
+            await Promise.all(updatePromises);
             await refreshData();
         } catch (error) {
             console.error('Error reordering products batch:', error);
