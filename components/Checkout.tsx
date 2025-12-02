@@ -380,7 +380,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
           customer_document: formData.cpf,
           instagram_username: needsPostSelector ? (selectedPosts.length > 0 ? `${selectedPosts.length} posts selecionados` : '') : formData.link,
           service_type: offer?.title || 'Serviço',
-          quantity: selectedPackage.quantity + selectedBumps.length * selectedPackage.quantity,
+          quantity: selectedPackage.quantity,
           unit_price: selectedPackage.price,
           total_amount: total,
           selected_posts: selectedPostsData, // Add selected posts array
@@ -388,12 +388,20 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
           profile_username: getUsername(),
           order_bumps: orderBumps
             .filter(b => selectedBumps.includes(b.id))
-            .map(b => ({
-              id: b.id,
-              title: b.title,
-              price: b.price,
-              discount_percentage: b.discount_percentage
-            }))
+            .map(b => {
+              // Extract quantity from title (e.g. "100 curtidas" -> quantity: 100, title: "curtidas")
+              const match = b.title.match(/^(\d+)\s+(.+)$/);
+              const quantity = match ? parseInt(match[1]) : 1;
+              const cleanTitle = match ? match[2] : b.title;
+
+              return {
+                id: b.id,
+                title: cleanTitle,
+                quantity: quantity,
+                price: b.price,
+                discount_percentage: b.discount_percentage
+              };
+            })
         };
 
         console.log('Sending Payment Data:', paymentData);
