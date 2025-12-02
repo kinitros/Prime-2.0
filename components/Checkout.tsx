@@ -404,7 +404,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
     const lowerTitle = title.toLowerCase();
     if (lowerTitle.includes('seguidores')) return <UserPlus className="w-6 h-6 text-white" />;
     if (lowerTitle.includes('curtidas') || lowerTitle.includes('likes')) return <Heart className="w-6 h-6 text-white" />;
-    if (lowerTitle.includes('visualizações') || lowerTitle.includes('views')) return <Eye className="w-6 h-6 text-white" />;
+    if (lowerTitle.includes('Visualizações') || lowerTitle.includes('views')) return <Eye className="w-6 h-6 text-white" />;
     return <Plus className="w-6 h-6 text-white" />;
   };
 
@@ -587,7 +587,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                         <Grid className="w-6 h-6 text-slate-400 group-hover:text-primary" />
                       </div>
                       <span className="font-bold">Selecionar Postagens</span>
-                      <span className="text-xs text-slate-500">Escolha onde receber as {offer.type === 'likes' ? 'curtidas' : 'visualizações'}</span>
+                      <span className="text-xs text-slate-500">Escolha onde receber as {offer.type === 'likes' ? 'curtidas' : 'Visualizações'}</span>
                     </button>
                   )}
                 </div>
@@ -847,7 +847,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                   <div className="bg-slate-100 p-1.5 rounded-lg text-slate-600">
                     <CreditCard className="w-4 h-4" />
                   </div>
-                  <span className="font-bold text-slate-900 text-xs">Cartão</span>
+                  <span className="font-bold text-slate-900 text-xs">cartão</span>
                 </div>
               </div>
             </div>
@@ -926,7 +926,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                 ) : (
                   <>
                     <Lock className="w-5 h-5" />
-                    {formData.paymentMethod === 'pix' ? 'Gerar Pix QR Code' : 'Pagar com Cartão'}
+                    {formData.paymentMethod === 'pix' ? 'Gerar Pix QR Code' : 'Pagar com cartão'}
                   </>
                 )}
               </button>
@@ -1022,6 +1022,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
             ...profileData,
             channelId: profileData.channelId || profileData.id // For YouTube
           }}
+          serviceType={offer.type}
         />
       )}
     </div>
