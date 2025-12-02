@@ -252,6 +252,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 price: updatedProduct.price,
                 original_price: updatedProduct.originalPrice,
                 popular: updatedProduct.popular || false,
+                credit_card_url: updatedProduct.credit_card_url,
                 updated_at: new Date().toISOString()
             })
             .eq('id', updatedProduct.id);
@@ -273,7 +274,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 quantity: newProduct.quantity,
                 price: newProduct.price,
                 original_price: newProduct.originalPrice,
-                popular: newProduct.popular || false
+                popular: newProduct.popular || false,
+                credit_card_url: newProduct.credit_card_url
             });
 
         if (error) {

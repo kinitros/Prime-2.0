@@ -222,6 +222,46 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
     return totalQty;
   };
 
+  // Helper to calculate Total Likes (Main + Bumps)
+  const getTotalLikes = (): number => {
+    let total = 0;
+    // Check if main offer is likes
+    if (offer.type === 'likes') {
+      total += selectedPackage.quantity;
+    }
+    // Add bumps
+    orderBumps
+      .filter(bump => selectedBumps.includes(bump.id))
+      .forEach(bump => {
+        const title = bump.title.toLowerCase();
+        if (title.includes('curtidas') || title.includes('likes')) {
+          const match = bump.title.match(/(\d+)/);
+          if (match) total += parseInt(match[1]);
+        }
+      });
+    return total;
+  };
+
+  // Helper to calculate Total Views (Main + Bumps)
+  const getTotalViews = (): number => {
+    let total = 0;
+    // Check if main offer is views
+    if (offer.type === 'views') {
+      total += selectedPackage.quantity;
+    }
+    // Add bumps
+    orderBumps
+      .filter(bump => selectedBumps.includes(bump.id))
+      .forEach(bump => {
+        const title = bump.title.toLowerCase();
+        if (title.includes('visualizações') || title.includes('views')) {
+          const match = bump.title.match(/(\d+)/);
+          if (match) total += parseInt(match[1]);
+        }
+      });
+    return total;
+  };
+
   // Note: Payment status polling is now handled directly in handlePayment
   // This prevents duplicate polling and ensures we have the correct order_id
 
@@ -391,6 +431,11 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                 setPaymentStatus('paid');
                 clearInterval(pollInterval);
 
+                // Prepare extras data (order bumps)
+                const extras = orderBumps
+                  .filter(b => selectedBumps.includes(b.id))
+                  .map(b => ({ title: b.title, type: b.title.toLowerCase().includes('seguidores') ? 'followers' : 'engagement' }));
+
                 // Redirect to thank you page with order data
                 const searchParams = new URLSearchParams({
                   orderId: response.data.order_id,
@@ -399,7 +444,8 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                   quantity: selectedPackage.quantity.toString(),
                   username: getUsername(),
                   amount: total.toString(),
-                  estimatedDelivery: '24-72 horas'
+                  estimatedDelivery: '24-72 horas',
+                  extras: JSON.stringify(extras)
                 });
                 navigate(`/thank-you?${searchParams.toString()}`);
               }
@@ -618,9 +664,27 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                           );
                         })}
                       </div>
-                      <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-green-500" />
-                        Receberão <strong>{Math.floor(getTotalQuantity() / selectedPosts.length)}</strong> {offer.type === 'likes' ? 'curtidas' : 'views'} cada.
+                      <div className="mt-3 space-y-2 text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-100">
+                        <p className="font-bold text-slate-700 mb-1">Cada post receberá:</p>
+
+                        {getTotalLikes() > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
+                            <strong>{Math.floor(getTotalLikes() / selectedPosts.length)}</strong> Curtidas
+                          </div>
+                        )}
+
+                        {getTotalViews() > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <Eye className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />
+                            <div>
+                              <strong>{Math.floor(getTotalViews() / selectedPosts.filter(p => 'media_type' in p ? (p as InstagramPost).media_type === 2 : true).length || 1)}</strong> Visualizações
+                              {selectedPosts.some(p => 'media_type' in p && (p as InstagramPost).media_type !== 2) && (
+                                <span className="text-[10px] text-slate-400 ml-1">(apenas vídeos)</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -681,9 +745,22 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                             </button>
                           </div>
                         ))}
-                        <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-green-500" />
-                          Receberão <strong>{Math.floor(getTotalQuantity() / videoLinks.length)}</strong> {offer.type === 'likes' ? 'curtidas' : 'views'} cada.
+                        <div className="mt-3 space-y-2 text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-100">
+                          <p className="font-bold text-slate-700 mb-1">Cada vídeo receberá:</p>
+
+                          {getTotalLikes() > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
+                              <strong>{Math.floor(getTotalLikes() / videoLinks.length)}</strong> Curtidas
+                            </div>
+                          )}
+
+                          {getTotalViews() > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Eye className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />
+                              <strong>{Math.floor(getTotalViews() / videoLinks.length)}</strong> Visualizações
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

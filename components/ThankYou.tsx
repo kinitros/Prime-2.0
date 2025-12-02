@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { CheckCircle2, Package, Clock, Smartphone, ArrowRight, Home, MessageCircle, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CheckCircle2, Package, Clock, Smartphone, ArrowRight, Home, MessageCircle, Users, Plus } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdmin } from '../context/AdminContext';
 
@@ -12,6 +12,7 @@ interface ThankYouProps {
     username: string;
     amount: number;
     estimatedDelivery: string;
+    extras?: { title: string; type: string }[];
   };
 }
 
@@ -19,6 +20,7 @@ const ThankYou: React.FC<ThankYouProps> = ({ orderData }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { whatsappGroupUrl } = useAdmin();
+  const [extras, setExtras] = useState<{ title: string; type: string }[]>([]);
 
   // Get order data from URL params if not passed as props
   const orderId = orderData?.orderId || searchParams.get('orderId') || '';
@@ -28,6 +30,19 @@ const ThankYou: React.FC<ThankYouProps> = ({ orderData }) => {
   const username = orderData?.username || searchParams.get('username') || '';
   const amount = orderData?.amount || parseFloat(searchParams.get('amount') || '0') || 0;
   const estimatedDelivery = orderData?.estimatedDelivery || '24-72 horas';
+
+  useEffect(() => {
+    const extrasParam = searchParams.get('extras');
+    if (extrasParam) {
+      try {
+        setExtras(JSON.parse(extrasParam));
+      } catch (e) {
+        console.error('Failed to parse extras:', e);
+      }
+    } else if (orderData?.extras) {
+      setExtras(orderData.extras);
+    }
+  }, [searchParams, orderData]);
 
   // DataLayer event on mount
   useEffect(() => {
@@ -134,6 +149,24 @@ const ThankYou: React.FC<ThankYouProps> = ({ orderData }) => {
               <span className="text-slate-600">Quantidade</span>
               <span className="font-bold text-slate-900">{quantity.toLocaleString()}</span>
             </div>
+
+            {/* Extras / Order Bumps */}
+            {extras.length > 0 && (
+              <div className="pt-4 border-t border-slate-100">
+                <p className="text-sm font-medium text-slate-500 mb-2 flex items-center gap-2">
+                  <Plus className="w-3 h-3" /> Adicionais
+                </p>
+                <div className="space-y-2">
+                  {extras.map((extra, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm bg-slate-50 p-2 rounded-lg">
+                      <span className="font-medium text-slate-700">{extra.title}</span>
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-4 border-t border-slate-100">
               <span className="text-lg font-bold text-slate-900">Total Pago</span>
               <span className="text-2xl font-black text-green-600">
