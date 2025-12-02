@@ -12,6 +12,7 @@ interface AdminContextType {
     faviconUrl: string;
     facebookPixelId: string;
     googleAdsId: string;
+    gtmId: string;
     updateTestButtonUrl: (url: string) => Promise<void>;
     updateWhatsappUrl: (url: string) => Promise<void>;
     updateWhatsappGroupUrl: (url: string) => Promise<void>;
@@ -19,10 +20,12 @@ interface AdminContextType {
     updateFaviconUrl: (url: string) => Promise<void>;
     updateFacebookPixelId: (id: string) => Promise<void>;
     updateGoogleAdsId: (id: string) => Promise<void>;
+    updateGtmId: (id: string) => Promise<void>;
     updateProduct: (platformId: string, offerId: string, product: Product) => Promise<void>;
     addProduct: (platformId: string, offerId: string, product: Product) => Promise<void>;
     deleteProduct: (platformId: string, offerId: string, productId: string) => Promise<void>;
     reorderProduct: (platformId: string, offerId: string, productId: string, direction: 'up' | 'down') => Promise<void>;
+    reorderProductsBatch: (products: { id: string; display_order: number }[]) => Promise<void>;
     updateOffer: (platformId: string, offer: ServiceOffer) => Promise<void>;
     addOffer: (platformId: string, offer: ServiceOffer) => Promise<void>;
     deleteOffer: (platformId: string, offerId: string) => Promise<void>;
@@ -44,6 +47,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [faviconUrl, setFaviconUrl] = useState('');
     const [facebookPixelId, setFacebookPixelId] = useState('');
     const [googleAdsId, setGoogleAdsId] = useState('');
+    const [gtmId, setGtmId] = useState('');
 
     // Load data from Supabase on mount
     useEffect(() => {
@@ -56,7 +60,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const { data, error } = await supabase
                 .from('settings')
                 .select('*')
-                .in('setting_key', ['site_logo', 'site_favicon', 'whatsapp_group_url', 'test_button_url', 'whatsapp_url', 'facebook_pixel_id', 'google_ads_id']);
+                .in('setting_key', ['site_logo', 'site_favicon', 'whatsapp_group_url', 'test_button_url', 'whatsapp_url', 'facebook_pixel_id', 'google_ads_id', 'google_tag_manager_id']);
 
             if (error && error.code !== 'PGRST116') {
                 console.error('Error loading settings:', error);
@@ -71,6 +75,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 const whatsappSetting = data.find(s => s.setting_key === 'whatsapp_url');
                 const facebookPixelSetting = data.find(s => s.setting_key === 'facebook_pixel_id');
                 const googleAdsSetting = data.find(s => s.setting_key === 'google_ads_id');
+                const gtmSetting = data.find(s => s.setting_key === 'google_tag_manager_id');
 
                 if (logoSetting) setLogoUrl(logoSetting.setting_value);
                 if (faviconSetting) setFaviconUrl(faviconSetting.setting_value);
@@ -79,6 +84,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 if (whatsappSetting) setWhatsappUrl(whatsappSetting.setting_value);
                 if (facebookPixelSetting) setFacebookPixelId(facebookPixelSetting.setting_value);
                 if (googleAdsSetting) setGoogleAdsId(googleAdsSetting.setting_value);
+                if (gtmSetting) setGtmId(gtmSetting.setting_value);
             }
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -341,6 +347,26 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         await refreshData();
     };
 
+    const reorderProductsBatch = async (products: { id: string; display_order: number }[]) => {
+        try {
+            const updates = products.map(p => ({
+                id: p.id,
+                display_order: p.display_order,
+                updated_at: new Date().toISOString()
+            }));
+
+            const { error } = await supabase
+                .from('products')
+                .upsert(updates, { onConflict: 'id' });
+
+            if (error) throw error;
+            await refreshData();
+        } catch (error) {
+            console.error('Error reordering products batch:', error);
+            throw error;
+        }
+    };
+
     const updateOffer = async (platformId: string, updatedOffer: ServiceOffer) => {
         const { error } = await supabase
             .from('service_offers')
@@ -490,6 +516,26 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
+    const updateGtmId = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('settings')
+                .upsert({
+                    setting_key: 'google_tag_manager_id',
+                    setting_value: id,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                });
+
+            if (error) throw error;
+            setGtmId(id);
+        } catch (error) {
+            console.error('Error updating google tag manager id:', error);
+            throw error;
+        }
+    };
+
     const updateTestButtonUrl = async (url: string) => {
         try {
             const { error } = await supabase
@@ -549,6 +595,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             faviconUrl,
             facebookPixelId,
             googleAdsId,
+            gtmId,
             updateTestButtonUrl,
             updateWhatsappUrl,
             updateWhatsappGroupUrl,
@@ -556,10 +603,12 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             updateFaviconUrl,
             updateFacebookPixelId,
             updateGoogleAdsId,
+            updateGtmId,
             updateProduct,
             addProduct,
             deleteProduct,
             reorderProduct,
+            reorderProductsBatch,
             updateOffer,
             addOffer,
             deleteOffer,

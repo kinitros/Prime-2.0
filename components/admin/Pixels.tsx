@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
-import { Target, Save, CheckCircle2, AlertCircle, Facebook, Search } from 'lucide-react';
+import { Target, Save, CheckCircle2, AlertCircle, Facebook, Search, Tag } from 'lucide-react';
 
 const Pixels: React.FC = () => {
-    const { facebookPixelId, googleAdsId, updateFacebookPixelId, updateGoogleAdsId } = useAdmin();
+    const { facebookPixelId, googleAdsId, gtmId, updateFacebookPixelId, updateGoogleAdsId, updateGtmId } = useAdmin();
     
     const [localFacebookPixelId, setLocalFacebookPixelId] = useState('');
     const [localGoogleAdsId, setLocalGoogleAdsId] = useState('');
+    const [localGtmId, setLocalGtmId] = useState('');
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -14,7 +15,8 @@ const Pixels: React.FC = () => {
     useEffect(() => {
         setLocalFacebookPixelId(facebookPixelId || '');
         setLocalGoogleAdsId(googleAdsId || '');
-    }, [facebookPixelId, googleAdsId]);
+        setLocalGtmId(gtmId || '');
+    }, [facebookPixelId, googleAdsId, gtmId]);
 
     const saveSettings = async () => {
         setSaving(true);
@@ -24,6 +26,7 @@ const Pixels: React.FC = () => {
         try {
             await updateFacebookPixelId(localFacebookPixelId);
             await updateGoogleAdsId(localGoogleAdsId);
+            await updateGtmId(localGtmId);
             
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
@@ -99,6 +102,35 @@ const Pixels: React.FC = () => {
                     />
                     <p className="text-xs text-slate-500 mt-2">
                         Insira o ID que começa com "AW-". A tag global (gtag.js) será configurada automaticamente.
+                    </p>
+                </div>
+            </div>
+
+            {/* Google Tag Manager */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <Tag className="w-5 h-5 text-[#4285F4]" />
+                        Google Tag Manager
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Gerenciamento centralizado de tags (GTM)
+                    </p>
+                </div>
+
+                <div className="p-6">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                        ID do Container (GTM-...)
+                    </label>
+                    <input
+                        type="text"
+                        value={localGtmId}
+                        onChange={(e) => setLocalGtmId(e.target.value)}
+                        placeholder="Ex: GTM-XXXXXXX"
+                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
+                    />
+                    <p className="text-xs text-slate-500 mt-2">
+                        Insira o ID que começa com "GTM-". O script será injetado automaticamente.
                     </p>
                 </div>
             </div>

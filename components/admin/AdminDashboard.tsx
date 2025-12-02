@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { PlatformId, Product, ServiceOffer, OrderBump } from '../../types';
-import { Plus, Trash2, Edit2, Save, X, ArrowLeft, ChevronUp, ChevronDown, LogOut, LayoutGrid, Users, Globe, SettingsIcon, UserPlus, Heart, Eye, Target } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, ArrowLeft, LogOut, LayoutGrid, Users, Globe, SettingsIcon, UserPlus, Heart, Eye, Target, GripVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import CRM from './CRM';
 import Webhooks from './Webhooks';
 import Settings from './Settings';
 import Pixels from './Pixels';
 
 const AdminDashboard: React.FC = () => {
-    const { platforms, updateProduct, addProduct, deleteProduct, reorderProduct, addOffer, updateOffer, deleteOffer, addOrderBump, updateOrderBump, deleteOrderBump, isLoading: isDataLoading } = useAdmin();
+    const { platforms, updateProduct, addProduct, deleteProduct, reorderProduct, reorderProductsBatch, addOffer, updateOffer, deleteOffer, addOrderBump, updateOrderBump, deleteOrderBump, isLoading: isDataLoading } = useAdmin();
     const [selectedPlatformId, setSelectedPlatformId] = useState<PlatformId>(PlatformId.INSTAGRAM);
     const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -19,6 +20,7 @@ const AdminDashboard: React.FC = () => {
     const [currentView, setCurrentView] = useState<'products' | 'crm' | 'webhooks' | 'settings' | 'pixels'>('crm');
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
+    const [localProducts, setLocalProducts] = useState<Product[]>([]);
 
     // Default new product state
     const [newProduct, setNewProduct] = useState<Partial<Product>>({
@@ -47,6 +49,17 @@ const AdminDashboard: React.FC = () => {
     });
 
     const [editingService, setEditingService] = useState<ServiceOffer | null>(null);
+
+    const selectedPlatform = platforms.find(p => p.id === selectedPlatformId);
+    const selectedOffer = selectedPlatform?.offers.find(o => o.id === selectedOfferId);
+
+    useEffect(() => {
+        if (selectedOffer) {
+            setLocalProducts(selectedOffer.products);
+        } else {
+            setLocalProducts([]);
+        }
+    }, [selectedOffer]);
 
     useEffect(() => {
         const checkSession = async () => {
@@ -79,8 +92,26 @@ const AdminDashboard: React.FC = () => {
         </div>
     );
 
-    const selectedPlatform = platforms.find(p => p.id === selectedPlatformId);
-    const selectedOffer = selectedPlatform?.offers.find(o => o.id === selectedOfferId);
+
+
+    const handleDragEnd = (result: DropResult) => {
+        if (!result.destination) return;
+
+        const items = Array.from(localProducts);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        setLocalProducts(items);
+    };
+
+    const handleSaveOrder = async () => {
+        const productsToUpdate = localProducts.map((p, index) => ({
+            id: p.id,
+            display_order: index
+        }));
+        await reorderProductsBatch(productsToUpdate);
+        alert('Ordem dos produtos salva com sucesso!');
+    };
 
     const handleSaveProduct = () => {
         if (editingProduct && selectedOffer) {
@@ -437,12 +468,20 @@ const AdminDashboard: React.FC = () => {
                                     <div className="space-y-6">
                                         <div className="flex justify-between items-center">
                                             <h3 className="text-lg font-bold text-slate-800">Produtos Disponíveis</h3>
-                                            <button
-                                                onClick={() => setIsAddingProduct(true)}
-                                                className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary-hover transition-colors"
-                                            >
-                                                <Plus className="w-4 h-4" /> Novo Produto
-                                            </button>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={handleSaveOrder}
+                                                    className="flex items-center gap-2 bg-white text-primary border border-primary px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary/5 transition-colors"
+                                                >
+                                                    <Save className="w-4 h-4" /> Salvar Ordem
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsAddingProduct(true)}
+                                                    className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary-hover transition-colors"
+                                                >
+                                                    <Plus className="w-4 h-4" /> Novo Produto
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* Add Product Form */}
@@ -519,244 +558,254 @@ const AdminDashboard: React.FC = () => {
                                         )}
 
                                         {/* Product List */}
-                                        <div className="grid gap-4">
-                                            {selectedOffer.products.map(product => (
-                                                <div key={product.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all">
-                                                    {editingProduct?.id === product.id ? (
-                                                        // Edit Mode
-                                                        <div className="flex-1 grid grid-cols-4 gap-4 mr-4">
-                                                            <input
-                                                                type="number"
-                                                                value={editingProduct.quantity}
-                                                                onChange={e => setEditingProduct({ ...editingProduct, quantity: Number(e.target.value) })}
-                                                                className="border border-slate-200 rounded-lg p-2 text-sm"
-                                                            />
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                value={editingProduct.price}
-                                                                onChange={e => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })}
-                                                                className="border border-slate-200 rounded-lg p-2 text-sm"
-                                                            />
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                value={editingProduct.originalPrice}
-                                                                onChange={e => setEditingProduct({ ...editingProduct, originalPrice: Number(e.target.value) })}
-                                                                className="border border-slate-200 rounded-lg p-2 text-sm"
-                                                            />
-                                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={editingProduct.popular}
-                                                                    onChange={e => setEditingProduct({ ...editingProduct, popular: e.target.checked })}
-                                                                />
-                                                                <span className="text-sm">Popular</span>
-                                                            </label>
-                                                            <div className="col-span-4">
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Link Pagamento Cartão"
-                                                                    value={editingProduct.credit_card_url || ''}
-                                                                    onChange={e => setEditingProduct({ ...editingProduct, credit_card_url: e.target.value })}
-                                                                    className="w-full border border-slate-200 rounded-lg p-2 text-sm"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        // View Mode
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-8">
-                                                                <div>
-                                                                    <p className="text-xs text-slate-400 font-bold uppercase">Quantidade</p>
-                                                                    <p className="font-bold text-slate-900">{product.quantity}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-xs text-slate-400 font-bold uppercase">Preço</p>
-                                                                    <p className="font-bold text-primary">R$ {product.price.toFixed(2)}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-xs text-slate-400 font-bold uppercase">Original</p>
-                                                                    <p className="font-medium text-slate-500 line-through">R$ {product.originalPrice.toFixed(2)}</p>
-                                                                </div>
-                                                                {product.popular && (
-                                                                    <span className="bg-accent/10 text-accent text-xs font-bold px-2 py-1 rounded-full">POPULAR</span>
-                                                                )}
-                                                            </div>
+                                        <DragDropContext onDragEnd={handleDragEnd}>
+                                            <Droppable droppableId="products">
+                                                {(provided) => (
+                                                    <div
+                                                        {...provided.droppableProps}
+                                                        ref={provided.innerRef}
+                                                        className="grid gap-4"
+                                                    >
+                                                        {localProducts.map((product, index) => (
+                                                            <Draggable key={product.id} draggableId={product.id} index={index}>
+                                                                {(provided) => (
+                                                                    <div
+                                                                        ref={provided.innerRef}
+                                                                        {...provided.draggableProps}
+                                                                        className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all"
+                                                                    >
+                                                                        {/* Drag Handle */}
+                                                                        <div {...provided.dragHandleProps} className="mr-4 cursor-grab text-slate-400 hover:text-slate-600 flex items-center justify-center">
+                                                                            <GripVertical className="w-5 h-5" />
+                                                                        </div>
 
-                                                            {/* Order Bumps Section - Always show */}
-                                                            <div className="mt-4 pt-4 border-t border-slate-200">
-                                                                <div className="flex items-center justify-between mb-3">
-                                                                    <h5 className="text-xs font-bold text-slate-600 uppercase">Order Bumps ({product.order_bumps?.length || 0})</h5>
-                                                                    {isAddingBump !== product.id && (
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setIsAddingBump(product.id);
-                                                                                setNewBumpData({ title: '', price: 0, discount_percentage: 20 });
-                                                                            }}
-                                                                            className="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors flex items-center gap-1"
-                                                                        >
-                                                                            <Plus className="w-3 h-3" /> Adicionar Bump
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-
-                                                                {/* Add Bump Form */}
-                                                                {isAddingBump === product.id && (
-                                                                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                                                        <h6 className="text-xs font-bold text-blue-900 mb-2">Novo Order Bump</h6>
-                                                                        <div className="space-y-2">
-                                                                            <div>
-                                                                                <label className="block text-xs font-medium text-slate-700 mb-1">Título</label>
-                                                                                <input
-                                                                                    type="text"
-                                                                                    value={newBumpData.title}
-                                                                                    onChange={e => setNewBumpData({ ...newBumpData, title: e.target.value })}
-                                                                                    placeholder="Ex: Leve mais 500 seguidores"
-                                                                                    className="w-full border border-slate-300 rounded p-2 text-xs"
-                                                                                />
-                                                                            </div>
-                                                                            <div className="grid grid-cols-2 gap-2">
-                                                                                <div>
-                                                                                    <label className="block text-xs font-medium text-slate-700 mb-1">Preço (R$)</label>
+                                                                        <div className="flex-1 flex items-center justify-between w-full">
+                                                                            {editingProduct?.id === product.id ? (
+                                                                                // Edit Mode
+                                                                                <div className="flex-1 grid grid-cols-4 gap-4 mr-4">
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        value={editingProduct.quantity}
+                                                                                        onChange={e => setEditingProduct({ ...editingProduct, quantity: Number(e.target.value) })}
+                                                                                        className="border border-slate-200 rounded-lg p-2 text-sm"
+                                                                                    />
                                                                                     <input
                                                                                         type="number"
                                                                                         step="0.01"
-                                                                                        value={newBumpData.price || ''}
-                                                                                        onChange={e => setNewBumpData({ ...newBumpData, price: parseFloat(e.target.value) || 0 })}
-                                                                                        className="w-full border border-slate-300 rounded p-2 text-xs"
+                                                                                        value={editingProduct.price}
+                                                                                        onChange={e => setEditingProduct({ ...editingProduct, price: Number(e.target.value) })}
+                                                                                        className="border border-slate-200 rounded-lg p-2 text-sm"
                                                                                     />
-                                                                                </div>
-                                                                                <div>
-                                                                                    <label className="block text-xs font-medium text-slate-700 mb-1">Desconto (%)</label>
                                                                                     <input
                                                                                         type="number"
-                                                                                        value={newBumpData.discount_percentage}
-                                                                                        onChange={e => setNewBumpData({ ...newBumpData, discount_percentage: parseFloat(e.target.value) || 0 })}
-                                                                                        className="w-full border border-slate-300 rounded p-2 text-xs"
+                                                                                        step="0.01"
+                                                                                        value={editingProduct.originalPrice}
+                                                                                        onChange={e => setEditingProduct({ ...editingProduct, originalPrice: Number(e.target.value) })}
+                                                                                        className="border border-slate-200 rounded-lg p-2 text-sm"
                                                                                     />
+                                                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                                                        <input
+                                                                                            type="checkbox"
+                                                                                            checked={editingProduct.popular}
+                                                                                            onChange={e => setEditingProduct({ ...editingProduct, popular: e.target.checked })}
+                                                                                        />
+                                                                                        <span className="text-sm">Popular</span>
+                                                                                    </label>
+                                                                                    <div className="col-span-4">
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            placeholder="Link Pagamento Cartão"
+                                                                                            value={editingProduct.credit_card_url || ''}
+                                                                                            onChange={e => setEditingProduct({ ...editingProduct, credit_card_url: e.target.value })}
+                                                                                            className="w-full border border-slate-200 rounded-lg p-2 text-sm"
+                                                                                        />
+                                                                                    </div>
                                                                                 </div>
-                                                                            </div>
-                                                                            <div className="flex gap-2 pt-2">
-                                                                                <button
-                                                                                    onClick={async () => {
-                                                                                        if (!newBumpData.title || newBumpData.price <= 0) {
-                                                                                            alert('Por favor, preencha todos os campos obrigatórios.');
-                                                                                            return;
-                                                                                        }
-                                                                                        await addOrderBump(product.id, {
-                                                                                            title: newBumpData.title,
-                                                                                            price: newBumpData.price,
-                                                                                            discount_percentage: newBumpData.discount_percentage,
-                                                                                            position: product.order_bumps?.length || 0
-                                                                                        });
-                                                                                        setIsAddingBump(null);
-                                                                                        setNewBumpData({ title: '', price: 0, discount_percentage: 20 });
-                                                                                    }}
-                                                                                    className="flex-1 bg-primary text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-primary/90"
-                                                                                >
-                                                                                    Salvar
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        setIsAddingBump(null);
-                                                                                        setNewBumpData({ title: '', price: 0, discount_percentage: 20 });
-                                                                                    }}
-                                                                                    className="flex-1 bg-slate-200 text-slate-700 px-3 py-1.5 rounded text-xs font-medium hover:bg-slate-300"
-                                                                                >
-                                                                                    Cancelar
-                                                                                </button>
+                                                                            ) : (
+                                                                                // View Mode
+                                                                                <div className="flex-1">
+                                                                                    <div className="flex items-center gap-8">
+                                                                                        <div>
+                                                                                            <p className="text-xs text-slate-400 font-bold uppercase">Quantidade</p>
+                                                                                            <p className="font-bold text-slate-900">{product.quantity}</p>
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <p className="text-xs text-slate-400 font-bold uppercase">Preço</p>
+                                                                                            <p className="font-bold text-primary">R$ {product.price.toFixed(2)}</p>
+                                                                                        </div>
+                                                                                        <div>
+                                                                                            <p className="text-xs text-slate-400 font-bold uppercase">Original</p>
+                                                                                            <p className="font-medium text-slate-500 line-through">R$ {product.originalPrice.toFixed(2)}</p>
+                                                                                        </div>
+                                                                                        {product.popular && (
+                                                                                            <span className="bg-accent/10 text-accent text-xs font-bold px-2 py-1 rounded-full">POPULAR</span>
+                                                                                        )}
+                                                                                    </div>
+
+                                                                                    {/* Order Bumps Section - Always show */}
+                                                                                    <div className="mt-4 pt-4 border-t border-slate-200">
+                                                                                        <div className="flex items-center justify-between mb-3">
+                                                                                            <h5 className="text-xs font-bold text-slate-600 uppercase">Order Bumps ({product.order_bumps?.length || 0})</h5>
+                                                                                            {isAddingBump !== product.id && (
+                                                                                                <button
+                                                                                                    onClick={() => {
+                                                                                                        setIsAddingBump(product.id);
+                                                                                                        setNewBumpData({ title: '', price: 0, discount_percentage: 20 });
+                                                                                                    }}
+                                                                                                    className="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors flex items-center gap-1"
+                                                                                                >
+                                                                                                    <Plus className="w-3 h-3" /> Adicionar Bump
+                                                                                                </button>
+                                                                                            )}
+                                                                                        </div>
+
+                                                                                        {/* Add Bump Form */}
+                                                                                        {isAddingBump === product.id && (
+                                                                                            <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                                                                                <h6 className="text-xs font-bold text-blue-900 mb-2">Novo Order Bump</h6>
+                                                                                                <div className="space-y-2">
+                                                                                                    <div>
+                                                                                                        <label className="block text-xs font-medium text-slate-700 mb-1">Título</label>
+                                                                                                        <input
+                                                                                                            type="text"
+                                                                                                            value={newBumpData.title}
+                                                                                                            onChange={e => setNewBumpData({ ...newBumpData, title: e.target.value })}
+                                                                                                            placeholder="Ex: Leve mais 500 seguidores"
+                                                                                                            className="w-full border border-slate-300 rounded p-2 text-xs"
+                                                                                                        />
+                                                                                                    </div>
+                                                                                                    <div className="grid grid-cols-2 gap-2">
+                                                                                                        <div>
+                                                                                                            <label className="block text-xs font-medium text-slate-700 mb-1">Preço (R$)</label>
+                                                                                                            <input
+                                                                                                                type="number"
+                                                                                                                step="0.01"
+                                                                                                                value={newBumpData.price || ''}
+                                                                                                                onChange={e => setNewBumpData({ ...newBumpData, price: parseFloat(e.target.value) || 0 })}
+                                                                                                                className="w-full border border-slate-300 rounded p-2 text-xs"
+                                                                                                            />
+                                                                                                        </div>
+                                                                                                        <div>
+                                                                                                            <label className="block text-xs font-medium text-slate-700 mb-1">Desconto (%)</label>
+                                                                                                            <input
+                                                                                                                type="number"
+                                                                                                                value={newBumpData.discount_percentage}
+                                                                                                                onChange={e => setNewBumpData({ ...newBumpData, discount_percentage: parseFloat(e.target.value) || 0 })}
+                                                                                                                className="w-full border border-slate-300 rounded p-2 text-xs"
+                                                                                                            />
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                    <div className="flex gap-2 pt-2">
+                                                                                                        <button
+                                                                                                            onClick={async () => {
+                                                                                                                if (!newBumpData.title || newBumpData.price <= 0) {
+                                                                                                                    alert('Por favor, preencha todos os campos obrigatórios.');
+                                                                                                                    return;
+                                                                                                                }
+                                                                                                                await addOrderBump(product.id, {
+                                                                                                                    title: newBumpData.title,
+                                                                                                                    price: newBumpData.price,
+                                                                                                                    discount_percentage: newBumpData.discount_percentage,
+                                                                                                                    position: product.order_bumps?.length || 0
+                                                                                                                });
+                                                                                                                setIsAddingBump(null);
+                                                                                                                setNewBumpData({ title: '', price: 0, discount_percentage: 20 });
+                                                                                                            }}
+                                                                                                            className="flex-1 bg-primary text-white px-3 py-1.5 rounded text-xs font-medium hover:bg-primary/90"
+                                                                                                        >
+                                                                                                            Salvar
+                                                                                                        </button>
+                                                                                                        <button
+                                                                                                            onClick={() => {
+                                                                                                                setIsAddingBump(null);
+                                                                                                                setNewBumpData({ title: '', price: 0, discount_percentage: 20 });
+                                                                                                            }}
+                                                                                                            className="flex-1 bg-slate-200 text-slate-700 px-3 py-1.5 rounded text-xs font-medium hover:bg-slate-300"
+                                                                                                        >
+                                                                                                            Cancelar
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        )}
+
+                                                                                        {product.order_bumps && product.order_bumps.length > 0 ? (
+                                                                                            <div className="space-y-2">
+                                                                                                {product.order_bumps.map((bump) => (
+                                                                                                    <div key={bump.id} className="bg-slate-50 p-2 rounded-lg flex items-center justify-between text-xs">
+                                                                                                        <div className="flex-1">
+                                                                                                            <p className="font-bold text-slate-700">{bump.title}</p>
+                                                                                                            <p className="text-slate-500">R$ {bump.price.toFixed(2)} {bump.discount_percentage > 0 && `(${bump.discount_percentage}% off)`}</p>
+                                                                                                        </div>
+                                                                                                        <div className="flex items-center gap-1">
+                                                                                                            <button
+                                                                                                                onClick={async () => {
+                                                                                                                    const title = prompt('Novo título:', bump.title);
+                                                                                                                    if (!title) return;
+                                                                                                                    const priceStr = prompt('Novo preço (R$):', bump.price.toString());
+                                                                                                                    if (!priceStr) return;
+                                                                                                                    const price = parseFloat(priceStr);
+                                                                                                                    const discountStr = prompt('Novo desconto (%):', bump.discount_percentage.toString());
+                                                                                                                    const discount = discountStr ? parseFloat(discountStr) : 0;
+
+                                                                                                                    await updateOrderBump(bump.id, { title, price, discount_percentage: discount });
+                                                                                                                }}
+                                                                                                                className="p-1 text-slate-400 hover:text-primary hover:bg-white rounded transition-colors"
+                                                                                                            >
+                                                                                                                <Edit2 className="w-3 h-3" />
+                                                                                                            </button>
+                                                                                                            <button
+                                                                                                                onClick={async () => {
+                                                                                                                    if (confirm('Remover este order bump?')) {
+                                                                                                                        await deleteOrderBump(bump.id);
+                                                                                                                    }
+                                                                                                                }}
+                                                                                                                className="p-1 text-slate-400 hover:text-red-600 hover:bg-white rounded transition-colors"
+                                                                                                            >
+                                                                                                                <Trash2 className="w-3 h-3" />
+                                                                                                            </button>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <p className="text-xs text-slate-400 italic">Nenhum order bump configurado. Clique em "Adicionar Bump" para criar o primeiro.</p>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+
+                                                                            <div className="flex items-center gap-2 ml-4">
+                                                                                {editingProduct?.id === product.id ? (
+                                                                                    <>
+                                                                                        <button onClick={handleSaveProduct} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
+                                                                                            <Save className="w-4 h-4" />
+                                                                                        </button>
+                                                                                        <button onClick={() => setEditingProduct(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors">
+                                                                                            <X className="w-4 h-4" />
+                                                                                        </button>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <button onClick={() => setEditingProduct(product)} className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors">
+                                                                                            <Edit2 className="w-4 h-4" />
+                                                                                        </button>
+                                                                                        <button onClick={() => deleteProduct(selectedPlatformId, selectedOffer.id, product.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                                                                            <Trash2 className="w-4 h-4" />
+                                                                                        </button>
+                                                                                    </>
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 )}
-
-                                                                {product.order_bumps && product.order_bumps.length > 0 ? (
-                                                                    <div className="space-y-2">
-                                                                        {product.order_bumps.map((bump) => (
-                                                                            <div key={bump.id} className="bg-slate-50 p-2 rounded-lg flex items-center justify-between text-xs">
-                                                                                <div className="flex-1">
-                                                                                    <p className="font-bold text-slate-700">{bump.title}</p>
-                                                                                    <p className="text-slate-500">R$ {bump.price.toFixed(2)} {bump.discount_percentage > 0 && `(${bump.discount_percentage}% off)`}</p>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-1">
-                                                                                    <button
-                                                                                        onClick={async () => {
-                                                                                            const title = prompt('Novo título:', bump.title);
-                                                                                            if (!title) return;
-                                                                                            const priceStr = prompt('Novo preço (R$):', bump.price.toString());
-                                                                                            if (!priceStr) return;
-                                                                                            const price = parseFloat(priceStr);
-                                                                                            const discountStr = prompt('Novo desconto (%):', bump.discount_percentage.toString());
-                                                                                            const discount = discountStr ? parseFloat(discountStr) : 0;
-
-                                                                                            await updateOrderBump(bump.id, { title, price, discount_percentage: discount });
-                                                                                        }}
-                                                                                        className="p-1 text-slate-400 hover:text-primary hover:bg-white rounded transition-colors"
-                                                                                    >
-                                                                                        <Edit2 className="w-3 h-3" />
-                                                                                    </button>
-                                                                                    <button
-                                                                                        onClick={async () => {
-                                                                                            if (confirm('Remover este order bump?')) {
-                                                                                                await deleteOrderBump(bump.id);
-                                                                                            }
-                                                                                        }}
-                                                                                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-white rounded transition-colors"
-                                                                                    >
-                                                                                        <Trash2 className="w-3 h-3" />
-                                                                                    </button>
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                ) : (
-                                                                    <p className="text-xs text-slate-400 italic">Nenhum order bump configurado. Clique em "Adicionar Bump" para criar o primeiro.</p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="flex items-center gap-2">
-                                                        {editingProduct?.id === product.id ? (
-                                                            <>
-                                                                <button onClick={handleSaveProduct} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                                                                    <Save className="w-4 h-4" />
-                                                                </button>
-                                                                <button onClick={() => setEditingProduct(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors">
-                                                                    <X className="w-4 h-4" />
-                                                                </button>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <button
-                                                                    onClick={() => reorderProduct(selectedPlatformId, selectedOffer.id, product.id, 'up')}
-                                                                    className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                                                    disabled={selectedOffer.products.indexOf(product) === 0}
-                                                                    title="Mover para cima"
-                                                                >
-                                                                    <ChevronUp className="w-4 h-4" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => reorderProduct(selectedPlatformId, selectedOffer.id, product.id, 'down')}
-                                                                    className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                                                    disabled={selectedOffer.products.indexOf(product) === selectedOffer.products.length - 1}
-                                                                    title="Mover para baixo"
-                                                                >
-                                                                    <ChevronDown className="w-4 h-4" />
-                                                                </button>
-                                                                <button onClick={() => setEditingProduct(product)} className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors">
-                                                                    <Edit2 className="w-4 h-4" />
-                                                                </button>
-                                                                <button onClick={() => deleteProduct(selectedPlatformId, selectedOffer.id, product.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            </>
-                                                        )}
+                                                            </Draggable>
+                                                        ))}
+                                                        {provided.placeholder}
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                                )}
+                                            </Droppable>
+                                        </DragDropContext>
                                     </div>
                                 ) : (
                                     <div className="text-center py-20">
