@@ -30,12 +30,16 @@ const PostSelector: React.FC<PostSelectorProps> = ({
     const [selectedPosts, setSelectedPosts] = useState<(InstagramPost | TikTokPost | YouTubeVideo)[]>(initialSelectedPosts);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [loadedOnlyReels, setLoadedOnlyReels] = useState<boolean | null>(null);
 
     useEffect(() => {
-        if (isOpen && posts.length === 0) {
-            loadPosts();
+        if (isOpen) {
+            // Reload if no posts or if the filter mode (onlyReels) has changed
+            if (posts.length === 0 || loadedOnlyReels !== onlyReels) {
+                loadPosts();
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, onlyReels]);
 
     // Reset selection if initialSelectedPosts changes (e.g. reopening modal)
     useEffect(() => {
@@ -69,6 +73,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
             }
 
             setPosts(fetchedPosts);
+            setLoadedOnlyReels(onlyReels);
         } catch (err) {
             setError('Não foi possível carregar as postagens. Tente novamente.');
         } finally {

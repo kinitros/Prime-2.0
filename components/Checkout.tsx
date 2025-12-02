@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlatformData, ServiceOffer, OrderForm, Product } from '../types';
 import { ArrowLeft, Link as LinkIcon, Mail, Phone, QrCode, CreditCard, Lock, CheckCircle2, Copy, Loader2, Smartphone, Check, Plus, User, FileText, Users, Image as ImageIcon, Grid, X, UserPlus, Heart, Eye } from 'lucide-react';
@@ -90,9 +90,16 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
   const [hasOrderBump, setHasOrderBump] = useState(false);
   const [selectedBumps, setSelectedBumps] = useState<string[]>([]); // Array of selected bump IDs
 
+  // Service Distribution State
+  type ServiceDistribution = {
+    [serviceId: string]: (InstagramPost | TikTokPost | YouTubeVideo)[]
+  }
+  const [serviceDistribution, setServiceDistribution] = useState<ServiceDistribution>({});
+  const [currentServiceId, setCurrentServiceId] = useState<string | null>(null);
+
   // Post/Video Selection State
   const [isPostSelectorOpen, setIsPostSelectorOpen] = useState(false);
-  const [selectedPosts, setSelectedPosts] = useState<(InstagramPost | TikTokPost | YouTubeVideo)[]>([]);
+  const [selectedPosts, setSelectedPosts] = useState<(InstagramPost | TikTokPost | YouTubeVideo)[]>([]); // Keep for backward compat/fallback, but main logic will move to serviceDistribution
 
   // Video Link State (for YouTube/Kwai)
   const [videoLinks, setVideoLinks] = useState<string[]>([]);
@@ -129,12 +136,40 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
     setHasOrderBump(false);
   }, [selectedPackage]);
 
-  // Auto-open post selector when engagement bump is selected
+  // Auto-open post selector when a distributable order bump is added
+  const prevSelectedBumpsRef = useRef<string[]>([]);
+  
   useEffect(() => {
+    const prev = prevSelectedBumpsRef.current;
+    const current = selectedBumps;
+    
+    // Find added bump
+    const addedBumpId = current.find(id => !prev.includes(id));
+    
+    if (addedBumpId) {
+        const bump = orderBumps.find(b => b.id === addedBumpId);
+        if (bump) {
+             const title = bump.title.toLowerCase();
+             // Check if it's a distributable service (likes or views)
+             // Exclude followers from opening the post selector
+             const isDistributable = (title.includes('curtidas') || title.includes('likes') || title.includes('views') || title.includes('visualizações')) && !title.includes('seguidores') && !title.includes('followers');
+             
+             if (isDistributable && needsPostSelector) {
+                 setCurrentServiceId(addedBumpId);
+                 setIsPostSelectorOpen(true);
+             }
+        }
+    }
+    
+    prevSelectedBumpsRef.current = current;
+  }, [selectedBumps, orderBumps, needsPostSelector]);
+
+  // Auto-open post selector when engagement bump is selected - REMOVED to avoid confusion with multiple selectors
+  /* useEffect(() => {
     if (hasEngagementBump && selectedPosts.length === 0 && !isPostSelectorOpen && needsPostSelector) {
       setIsPostSelectorOpen(true);
     }
-  }, [hasEngagementBump]); // Only trigger when hasEngagementBump changes state
+  }, [hasEngagementBump]); */
 
   // DataLayer: Begin Checkout
   useEffect(() => {
@@ -270,9 +305,68 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const getDistributableServices = () => {
+    const services = [];
+    
+    if (offer.type === 'likes' || offer.type === 'views') {
+      services.push({
+        id: 'main',
+        title: offer.title || 'Pacote Principal',
+        quantity: selectedPackage.quantity,
+        type: offer.type
+      });
+    }
+
+    orderBumps
+      .filter(bump => selectedBumps.includes(bump.id))
+      .forEach(bump => {
+        const title = bump.title.toLowerCase();
+        const match = bump.title.match(/(\d+)/);
+        const quantity = match ? parseInt(match[1]) : 0;
+        
+        if (title.includes('curtidas') || title.includes('likes')) {
+          services.push({
+            id: bump.id,
+            title: bump.title,
+            quantity: quantity,
+            type: 'likes'
+          });
+        } else if (title.includes('visualizações') || title.includes('views') || title.includes('visualizacoes')) {
+           services.push({
+            id: bump.id,
+            title: bump.title,
+            quantity: quantity,
+            type: 'views'
+          });
+        }
+      });
+      
+    return services;
+  };
+
   const handlePostSelection = (posts: (InstagramPost | TikTokPost | YouTubeVideo)[]) => {
-    setSelectedPosts(posts);
+    if (currentServiceId) {
+      setServiceDistribution(prev => {
+        const newState = { ...prev, [currentServiceId]: posts };
+        // Update flat list of selected posts for compatibility/display
+        const allPosts = Object.values(newState).flat();
+        const uniquePosts = Array.from(new Map(allPosts.map(p => {
+            const id = 'id' in p ? p.id : (p as YouTubeVideo).video_id;
+            return [id, p];
+        })).values());
+        setSelectedPosts(uniquePosts);
+        return newState;
+      });
+    } else {
+        // Fallback
+        setSelectedPosts(posts);
+        // Also update main service distribution if applicable
+        if (offer.type === 'likes' || offer.type === 'views') {
+            setServiceDistribution(prev => ({ ...prev, 'main': posts }));
+        }
+    }
     setIsPostSelectorOpen(false);
+    setCurrentServiceId(null);
   };
 
   const handleAddVideoLink = () => {
@@ -299,10 +393,19 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
 
     // Validate Link, Posts, or Video Links based on platform
     if (needsPostSelector) {
-      if (selectedPosts.length === 0) {
-        console.log('Validation failed: No posts selected');
-        alert("Por favor, selecione pelo menos uma postagem para receber as curtidas ou visualizações.");
+      const distributableServices = getDistributableServices();
+      const missingSelection = distributableServices.find(s => !serviceDistribution[s.id] || serviceDistribution[s.id].length === 0);
+
+      if (missingSelection) {
+        console.log('Validation failed: No posts selected for service', missingSelection.title);
+        alert(`Por favor, selecione as postagens para: ${missingSelection.title}`);
         return;
+      }
+
+      // Check if any selected post is missing (double check, though check above covers it)
+      if (selectedPosts.length === 0 && distributableServices.length > 0) {
+         // This might happen if selectedPosts sync failed, but missingSelection should catch it.
+         // We can skip this check or keep it as safety.
       }
 
       // Validate if views bump is present, ensure video is selected
@@ -355,67 +458,74 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
       }
 
       if (formData.paymentMethod === 'pix') {
-        // Calculate total quantities per service type
-        let totalLikes = 0;
-        let totalViews = 0;
-        let totalFollowers = 0; // Not distributed to posts, but good to track
-
-        // 1. Add Main Product Quantity
-        if (offer.type === 'likes') totalLikes += selectedPackage.quantity;
-        else if (offer.type === 'views') totalViews += selectedPackage.quantity;
-        else if (offer.type === 'followers') totalFollowers += selectedPackage.quantity;
-
-        // 2. Add Order Bumps Quantities
+        // Calculate total followers (not distributed to posts)
+        let totalFollowers = 0;
+        if (offer.type === 'followers') totalFollowers += selectedPackage.quantity;
+        
         orderBumps
           .filter(b => selectedBumps.includes(b.id))
           .forEach(bump => {
-            const title = bump.title.toLowerCase();
-            const match = bump.title.match(/(\d+)/);
-            const qty = match ? parseInt(match[1]) : 0;
-
-            if (title.includes('curtidas') || title.includes('likes')) {
-              totalLikes += qty;
-            } else if (title.includes('visualizações') || title.includes('views') || title.includes('visualizacoes')) {
-              totalViews += qty;
-            } else if (title.includes('seguidores') || title.includes('followers')) {
-              totalFollowers += qty;
-            }
+             const title = bump.title.toLowerCase();
+             const match = bump.title.match(/(\d+)/);
+             const qty = match ? parseInt(match[1]) : 0;
+             if (title.includes('seguidores') || title.includes('followers')) {
+                 totalFollowers += qty;
+             }
           });
 
-        // Prepare selected posts data with specific service breakdown
-        const selectedPostsData = selectedPosts.length > 0 ? selectedPosts.map(post => {
-          const postUrl = platform.id === 'instagram'
-            ? `https://www.instagram.com/p/${(post as InstagramPost).shortcode}/`
-            : platform.id === 'tiktok'
-              ? `https://www.tiktok.com/@${getUsername()}/video/${(post as TikTokPost).id}`
-              : platform.id === 'youtube'
-                ? `https://www.youtube.com/watch?v=${(post as YouTubeVideo).video_id}`
-                : '';
-
-          // Distribute totals among selected posts
-          const likesPerPost = totalLikes > 0 ? Math.floor(totalLikes / selectedPosts.length) : 0;
-          const viewsPerPost = totalViews > 0 ? Math.floor(totalViews / selectedPosts.length) : 0;
-
-          return {
-            post_url: postUrl,
-            post_id: 'id' in post ? post.id : (post as YouTubeVideo).video_id,
-            media_type: 'media_type' in post ? (post as InstagramPost).media_type : 2,
-            services: {
-              likes: likesPerPost,
-              views: viewsPerPost
-            }
-          };
-        }) : [];
+        // Prepare selected posts data with granular service breakdown
+        const postsMap = new Map<string, any>();
+        
+        // Iterate through each service (Main or Bump) and distribute its quantity to its selected posts
+        getDistributableServices().forEach(service => {
+            const posts = serviceDistribution[service.id] || [];
+            if (posts.length === 0) return;
+            
+            const quantityPerPost = Math.floor(service.quantity / posts.length);
+            
+            posts.forEach(post => {
+                const postId = 'id' in post ? post.id : (post as YouTubeVideo).video_id;
+                
+                if (!postsMap.has(postId)) {
+                    const postUrl = platform.id === 'instagram'
+                        ? `https://www.instagram.com/p/${(post as InstagramPost).shortcode}/`
+                        : platform.id === 'tiktok'
+                          ? `https://www.tiktok.com/@${getUsername()}/video/${(post as TikTokPost).id}`
+                          : platform.id === 'youtube'
+                            ? `https://www.youtube.com/watch?v=${(post as YouTubeVideo).video_id}`
+                            : '';
+                            
+                    postsMap.set(postId, {
+                        post_url: postUrl,
+                        post_id: postId,
+                        media_type: 'media_type' in post ? (post as InstagramPost).media_type : 2,
+                        services: { likes: 0, views: 0 }
+                    });
+                }
+                
+                const entry = postsMap.get(postId);
+                if (service.type === 'likes') {
+                    entry.services.likes += quantityPerPost;
+                } else {
+                    entry.services.views += quantityPerPost;
+                }
+            });
+        });
+        
+        const selectedPostsData = Array.from(postsMap.values());
 
         // Add Warning if Views purchased for Photos
         let orderWarning = "";
-        const hasViewsPurchased = totalViews > 0;
-        if (hasViewsPurchased && selectedPosts.length > 0) {
-          const hasOnlyPhotos = selectedPosts.every(post => 
-            'media_type' in post && (post as InstagramPost).media_type === 1
+        const hasViewsPurchased = getDistributableServices().some(s => s.type === 'views');
+        
+        if (hasViewsPurchased && selectedPostsData.length > 0) {
+          // Check if any views are assigned to a photo (media_type === 1)
+          const viewsAssignedToPhotos = selectedPostsData.some(post => 
+             post.services.views > 0 && post.media_type === 1
           );
-          if (hasOnlyPhotos) {
-            orderWarning = "⚠️ AVISO: Cliente comprou Visualizações mas selecionou apenas FOTOS (Imagens). Verificar entrega.";
+
+          if (viewsAssignedToPhotos) {
+            orderWarning = "⚠️ AVISO: Cliente distribuiu Visualizações para FOTOS (Imagens). Verificar entrega.";
           }
         }
 
@@ -687,75 +797,64 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
               {/* Post Selection Button (Only for Instagram/TikTok Likes/Views) */}
               {needsPostSelector && (
                 <div className="mb-8 animate-fade-in">
-                  <h3 className="text-lg font-bold text-slate-900 mb-3">Distribuição</h3>
-
-                  {selectedPosts.length > 0 ? (
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-bold text-slate-700">
-                          {selectedPosts.length} postagens selecionadas
-                        </span>
-                        <button
-                          onClick={() => setIsPostSelectorOpen(true)}
-                          className="text-xs text-primary font-bold hover:underline"
-                        >
-                          Alterar
-                        </button>
-                      </div>
-                      <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                        {selectedPosts.map(post => {
-                          // Get display URL based on post type
-                          const displayUrl = 'display_url' in post
-                            ? post.display_url
-                            : 'coverUrl' in post
-                              ? post.coverUrl
-                              : 'thumbnail' in post
-                                ? post.thumbnail
-                                : '';
-                          const postId = 'id' in post ? post.id : (post as YouTubeVideo).video_id;
-
-                          return (
-                            <div key={postId} className="relative w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-slate-200">
-                              <img src={displayUrl} alt="" className="w-full h-full object-cover" />
+                  <h3 className="text-lg font-bold text-slate-900 mb-3">Distribuição de Serviços</h3>
+                  
+                  <div className="space-y-4">
+                    {getDistributableServices().map(service => {
+                       const posts = serviceDistribution[service.id] || [];
+                       const isSelected = posts.length > 0;
+                       
+                       return (
+                        <div key={service.id} className="border border-slate-200 rounded-xl overflow-hidden">
+                            <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                                <div>
+                                    <h4 className="font-bold text-slate-800 text-sm">{service.title}</h4>
+                                    <p className="text-xs text-slate-500">{service.quantity} {service.type === 'likes' ? 'Curtidas' : 'Visualizações'}</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setCurrentServiceId(service.id);
+                                        setIsPostSelectorOpen(true);
+                                    }}
+                                    className="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                                >
+                                    {isSelected ? 'Alterar' : 'Selecionar'}
+                                </button>
                             </div>
-                          );
-                        })}
-                      </div>
-                      <div className="mt-3 space-y-2 text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-100">
-                        <p className="font-bold text-slate-700 mb-1">Cada post receberá:</p>
-
-                        {getTotalLikes() > 0 && (
-                          <div className="flex items-center gap-1.5">
-                            <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
-                            <strong>{Math.floor(getTotalLikes() / selectedPosts.length)}</strong> Curtidas
-                          </div>
-                        )}
-
-                        {getTotalViews() > 0 && (
-                          <div className="flex items-center gap-1.5">
-                            <Eye className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />
-                            <div>
-                              <strong>{Math.floor(getTotalViews() / selectedPosts.filter(p => 'media_type' in p ? (p as InstagramPost).media_type === 2 : true).length || 1)}</strong> Visualizações
-                              {selectedPosts.some(p => 'media_type' in p && (p as InstagramPost).media_type !== 2) && (
-                                <span className="text-[10px] text-slate-400 ml-1">(apenas vídeos)</span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setIsPostSelectorOpen(true)}
-                      className="w-full bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                    >
-                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all">
-                        <Grid className="w-6 h-6 text-slate-400 group-hover:text-primary" />
-                      </div>
-                      <span className="font-bold">Selecionar Postagens</span>
-                      <span className="text-xs text-slate-500">Escolha onde receber as {offer.type === 'likes' ? 'curtidas' : 'Visualizações'}</span>
-                    </button>
-                  )}
+                            
+                            {isSelected ? (
+                                <div className="p-4 bg-white">
+                                    <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar mb-2">
+                                        {posts.map(post => {
+                                            const displayUrl = 'display_url' in post
+                                                ? post.display_url
+                                                : 'coverUrl' in post
+                                                  ? post.coverUrl
+                                                  : 'thumbnail' in post
+                                                    ? post.thumbnail
+                                                    : '';
+                                            const postId = 'id' in post ? post.id : (post as YouTubeVideo).video_id;
+                                            return (
+                                                <div key={postId} className="relative w-10 h-10 shrink-0 rounded-lg overflow-hidden border border-slate-200">
+                                                    <img src={displayUrl} alt="" className="w-full h-full object-cover" />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                                        <CheckCircle2 className="w-3 h-3 text-green-500" />
+                                        <strong>{posts.length}</strong> posts receberão <strong>{Math.floor(service.quantity / posts.length)}</strong> {service.type === 'likes' ? 'curtidas' : 'views'} cada.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-white flex items-center justify-center">
+                                    <p className="text-sm text-slate-400 italic">Nenhum post selecionado</p>
+                                </div>
+                            )}
+                        </div>
+                       );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -1194,21 +1293,22 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
           onClose={() => setIsPostSelectorOpen(false)}
           username={(profileData as any).username || (profileData as any).uniqueId || ''}
           platformId={platform.id}
-          // Pass the MAX quantity available (Main or Bumps) to allow selecting more posts
-          // Logic: If main is followers (0 interaction) but bumps have 500 likes, we want to allow selecting posts for those 500 likes.
-          packageQuantity={Math.max(
-            Math.floor(getTotalLikes()),
-            Math.floor(getTotalViews()),
-            selectedPackage.quantity
-          ) || 1} // Fallback to 1 to avoid division by zero errors, though PostSelector handles it
+          // Pass quantity for the specific service being edited
+          packageQuantity={currentServiceId 
+             ? getDistributableServices().find(s => s.id === currentServiceId)?.quantity || selectedPackage.quantity 
+             : selectedPackage.quantity} 
           onConfirm={handlePostSelection}
-          initialSelectedPosts={selectedPosts}
+          // Use service-specific posts
+          initialSelectedPosts={currentServiceId ? serviceDistribution[currentServiceId] || [] : []}
           extraData={{
             ...profileData,
             channelId: profileData.channelId || profileData.id // For YouTube
           }}
-          // Only filter strictly if MAIN offer is views. If mixed (e.g. Followers + Views Bump), allow all media (and warn in backend)
-          onlyReels={platform.id === 'instagram' && offer.type === 'views'}
+          // Filter reels only if the specific service is 'views'
+          onlyReels={platform.id === 'instagram' && currentServiceId 
+             ? getDistributableServices().find(s => s.id === currentServiceId)?.type === 'views'
+             : (platform.id === 'instagram' && offer.type === 'views')
+          }
         />
       )}
     </div>
