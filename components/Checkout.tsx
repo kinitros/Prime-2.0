@@ -415,10 +415,10 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-white scroll-smooth">
+    <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar bg-white scroll-smooth">
       <div className="flex flex-col lg:flex-row min-h-full">
         {/* Left Column: Form */}
-        <div className="flex-1 p-6 md:p-8">
+        <div className="flex-1 p-6 md:p-8 min-w-0">
           <button
             onClick={() => {
               if (step === 2) {

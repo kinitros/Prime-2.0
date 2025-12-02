@@ -10,11 +10,15 @@ interface AdminContextType {
     whatsappGroupUrl: string;
     logoUrl: string;
     faviconUrl: string;
+    facebookPixelId: string;
+    googleAdsId: string;
     updateTestButtonUrl: (url: string) => Promise<void>;
     updateWhatsappUrl: (url: string) => Promise<void>;
     updateWhatsappGroupUrl: (url: string) => Promise<void>;
     updateLogoUrl: (url: string) => Promise<void>;
     updateFaviconUrl: (url: string) => Promise<void>;
+    updateFacebookPixelId: (id: string) => Promise<void>;
+    updateGoogleAdsId: (id: string) => Promise<void>;
     updateProduct: (platformId: string, offerId: string, product: Product) => Promise<void>;
     addProduct: (platformId: string, offerId: string, product: Product) => Promise<void>;
     deleteProduct: (platformId: string, offerId: string, productId: string) => Promise<void>;
@@ -38,6 +42,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [whatsappGroupUrl, setWhatsappGroupUrl] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
     const [faviconUrl, setFaviconUrl] = useState('');
+    const [facebookPixelId, setFacebookPixelId] = useState('');
+    const [googleAdsId, setGoogleAdsId] = useState('');
 
     // Load data from Supabase on mount
     useEffect(() => {
@@ -50,7 +56,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const { data, error } = await supabase
                 .from('settings')
                 .select('*')
-                .in('setting_key', ['site_logo', 'site_favicon', 'whatsapp_group_url', 'test_button_url', 'whatsapp_url']);
+                .in('setting_key', ['site_logo', 'site_favicon', 'whatsapp_group_url', 'test_button_url', 'whatsapp_url', 'facebook_pixel_id', 'google_ads_id']);
 
             if (error && error.code !== 'PGRST116') {
                 console.error('Error loading settings:', error);
@@ -63,12 +69,16 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 const whatsappGroupSetting = data.find(s => s.setting_key === 'whatsapp_group_url');
                 const testButtonSetting = data.find(s => s.setting_key === 'test_button_url');
                 const whatsappSetting = data.find(s => s.setting_key === 'whatsapp_url');
+                const facebookPixelSetting = data.find(s => s.setting_key === 'facebook_pixel_id');
+                const googleAdsSetting = data.find(s => s.setting_key === 'google_ads_id');
 
                 if (logoSetting) setLogoUrl(logoSetting.setting_value);
                 if (faviconSetting) setFaviconUrl(faviconSetting.setting_value);
                 if (whatsappGroupSetting) setWhatsappGroupUrl(whatsappGroupSetting.setting_value);
                 if (testButtonSetting) setTestButtonUrl(testButtonSetting.setting_value);
                 if (whatsappSetting) setWhatsappUrl(whatsappSetting.setting_value);
+                if (facebookPixelSetting) setFacebookPixelId(facebookPixelSetting.setting_value);
+                if (googleAdsSetting) setGoogleAdsId(googleAdsSetting.setting_value);
             }
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -438,6 +448,46 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         await refreshData();
     };
 
+    const updateGoogleAdsId = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('settings')
+                .upsert({
+                    setting_key: 'google_ads_id',
+                    setting_value: id,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                });
+
+            if (error) throw error;
+            setGoogleAdsId(id);
+        } catch (error) {
+            console.error('Error updating google ads id:', error);
+            throw error;
+        }
+    };
+
+    const updateFacebookPixelId = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('settings')
+                .upsert({
+                    setting_key: 'facebook_pixel_id',
+                    setting_value: id,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                });
+
+            if (error) throw error;
+            setFacebookPixelId(id);
+        } catch (error) {
+            console.error('Error updating facebook pixel id:', error);
+            throw error;
+        }
+    };
+
     const updateTestButtonUrl = async (url: string) => {
         try {
             const { error } = await supabase
@@ -495,11 +545,15 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             whatsappGroupUrl,
             logoUrl,
             faviconUrl,
+            facebookPixelId,
+            googleAdsId,
             updateTestButtonUrl,
             updateWhatsappUrl,
             updateWhatsappGroupUrl,
             updateLogoUrl,
             updateFaviconUrl,
+            updateFacebookPixelId,
+            updateGoogleAdsId,
             updateProduct,
             addProduct,
             deleteProduct,

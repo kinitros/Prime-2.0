@@ -8,6 +8,7 @@ import BusinessServices from './components/BusinessServices';
 import FOMONotifications from './components/FOMONotifications';
 import WhatsAppFloat from './components/WhatsAppFloat';
 import Modal from './components/Modal';
+import PixelManager from './components/PixelManager';
 import { TESTIMONIALS } from './constants';
 import { PlatformData } from './types';
 import { ArrowRight, Star, CheckCircle2, Instagram, Youtube, Video, Play, ThumbsUp, Users, Eye, MessageCircle, CreditCard, ShieldCheck, Zap } from 'lucide-react';
@@ -463,6 +464,7 @@ const App: React.FC = () => {
   return (
     <Router>
       <AdminProvider>
+        <PixelManager />
         <Routes>
           <Route path="/" element={<MainApp />} />
           <Route path="/admin" element={<AdminDashboard />} />

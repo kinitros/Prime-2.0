@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { PlatformId, Product, ServiceOffer, OrderBump } from '../../types';
-import { Plus, Trash2, Edit2, Save, X, ArrowLeft, ChevronUp, ChevronDown, LogOut, LayoutGrid, Users, Globe, SettingsIcon, UserPlus, Heart, Eye } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, ArrowLeft, ChevronUp, ChevronDown, LogOut, LayoutGrid, Users, Globe, SettingsIcon, UserPlus, Heart, Eye, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import CRM from './CRM';
 import Webhooks from './Webhooks';
 import Settings from './Settings';
+import Pixels from './Pixels';
 
 const AdminDashboard: React.FC = () => {
     const { platforms, updateProduct, addProduct, deleteProduct, reorderProduct, addOffer, updateOffer, deleteOffer, addOrderBump, updateOrderBump, deleteOrderBump, isLoading: isDataLoading } = useAdmin();
@@ -15,7 +16,7 @@ const AdminDashboard: React.FC = () => {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isAddingProduct, setIsAddingProduct] = useState(false);
     const [isAddingService, setIsAddingService] = useState(false);
-    const [currentView, setCurrentView] = useState<'products' | 'crm' | 'webhooks' | 'settings'>('crm');
+    const [currentView, setCurrentView] = useState<'products' | 'crm' | 'webhooks' | 'settings' | 'pixels'>('crm');
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
 
@@ -170,6 +171,13 @@ const AdminDashboard: React.FC = () => {
                         Webhooks
                     </button>
                     <button
+                        onClick={() => setCurrentView('pixels')}
+                        className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-colors flex items-center gap-3 ${currentView === 'pixels' ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-50'}`}
+                    >
+                        <Target className="w-5 h-5" />
+                        Pixels
+                    </button>
+                    <button
                         onClick={() => setCurrentView('settings')}
                         className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-colors flex items-center gap-3 ${currentView === 'settings' ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-50'}`}
                     >
@@ -215,6 +223,8 @@ const AdminDashboard: React.FC = () => {
                     <CRM />
                 ) : currentView === 'webhooks' ? (
                     <Webhooks />
+                ) : currentView === 'pixels' ? (
+                    <Pixels />
                 ) : currentView === 'settings' ? (
                     <Settings />
                 ) : (
