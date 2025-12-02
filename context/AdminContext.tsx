@@ -50,7 +50,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const { data, error } = await supabase
                 .from('settings')
                 .select('*')
-                .in('setting_key', ['site_logo', 'site_favicon', 'whatsapp_group_url']);
+                .in('setting_key', ['site_logo', 'site_favicon', 'whatsapp_group_url', 'test_button_url', 'whatsapp_url']);
 
             if (error && error.code !== 'PGRST116') {
                 console.error('Error loading settings:', error);
@@ -61,10 +61,14 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 const logoSetting = data.find(s => s.setting_key === 'site_logo');
                 const faviconSetting = data.find(s => s.setting_key === 'site_favicon');
                 const whatsappGroupSetting = data.find(s => s.setting_key === 'whatsapp_group_url');
+                const testButtonSetting = data.find(s => s.setting_key === 'test_button_url');
+                const whatsappSetting = data.find(s => s.setting_key === 'whatsapp_url');
 
                 if (logoSetting) setLogoUrl(logoSetting.setting_value);
                 if (faviconSetting) setFaviconUrl(faviconSetting.setting_value);
                 if (whatsappGroupSetting) setWhatsappGroupUrl(whatsappGroupSetting.setting_value);
+                if (testButtonSetting) setTestButtonUrl(testButtonSetting.setting_value);
+                if (whatsappSetting) setWhatsappUrl(whatsappSetting.setting_value);
             }
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -435,24 +439,52 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     const updateTestButtonUrl = async (url: string) => {
-        setTestButtonUrl(url);
-        // Store in localStorage for now (could be moved to Supabase later)
-        localStorage.setItem('testButtonUrl', url);
+        try {
+            const { error } = await supabase
+                .from('settings')
+                .upsert({
+                    setting_key: 'test_button_url',
+                    setting_value: url,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                });
+
+            if (error) throw error;
+            setTestButtonUrl(url);
+        } catch (error) {
+            console.error('Error updating test button url:', error);
+            throw error;
+        }
     };
 
     const updateWhatsappUrl = async (url: string) => {
-        setWhatsappUrl(url);
-        // Store in localStorage for now (could be moved to Supabase later)
-        localStorage.setItem('whatsappUrl', url);
+        try {
+            const { error } = await supabase
+                .from('settings')
+                .upsert({
+                    setting_key: 'whatsapp_url',
+                    setting_value: url,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                });
+
+            if (error) throw error;
+            setWhatsappUrl(url);
+        } catch (error) {
+            console.error('Error updating whatsapp url:', error);
+            throw error;
+        }
     };
 
-    // Load URLs from localStorage on mount
-    useEffect(() => {
+    // Load URLs from localStorage on mount - Removed as now loading from Supabase
+    /* useEffect(() => {
         const savedTestUrl = localStorage.getItem('testButtonUrl') || '';
         const savedWhatsappUrl = localStorage.getItem('whatsappUrl') || '';
         setTestButtonUrl(savedTestUrl);
         setWhatsappUrl(savedWhatsappUrl);
-    }, []);
+    }, []); */
 
     return (
         <AdminContext.Provider value={{
