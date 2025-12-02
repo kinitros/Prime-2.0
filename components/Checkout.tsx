@@ -407,6 +407,18 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
           };
         }) : [];
 
+        // Add Warning if Views purchased for Photos
+        let orderWarning = "";
+        const hasViewsPurchased = totalViews > 0;
+        if (hasViewsPurchased && selectedPosts.length > 0) {
+          const hasOnlyPhotos = selectedPosts.every(post => 
+            'media_type' in post && (post as InstagramPost).media_type === 1
+          );
+          if (hasOnlyPhotos) {
+            orderWarning = "⚠️ AVISO: Cliente comprou Visualizações mas selecionou apenas FOTOS (Imagens). Verificar entrega.";
+          }
+        }
+
         const paymentData = {
           customer_name: formData.name,
           customer_email: formData.email,
@@ -420,6 +432,9 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
           selected_posts: selectedPostsData, // Add selected posts array
           platform_id: platform.id,
           profile_username: getUsername(),
+          metadata: { // Add warning to metadata
+             warning: orderWarning
+          },
           order_bumps: orderBumps
             .filter(b => selectedBumps.includes(b.id))
             .map(b => {
@@ -1179,13 +1194,20 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
           onClose={() => setIsPostSelectorOpen(false)}
           username={(profileData as any).username || (profileData as any).uniqueId || ''}
           platformId={platform.id}
-          packageQuantity={selectedPackage.quantity}
+          // Pass the MAX quantity available (Main or Bumps) to allow selecting more posts
+          // Logic: If main is followers (0 interaction) but bumps have 500 likes, we want to allow selecting posts for those 500 likes.
+          packageQuantity={Math.max(
+            Math.floor(getTotalLikes()),
+            Math.floor(getTotalViews()),
+            selectedPackage.quantity
+          ) || 1} // Fallback to 1 to avoid division by zero errors, though PostSelector handles it
           onConfirm={handlePostSelection}
           initialSelectedPosts={selectedPosts}
           extraData={{
             ...profileData,
             channelId: profileData.channelId || profileData.id // For YouTube
           }}
+          // Only filter strictly if MAIN offer is views. If mixed (e.g. Followers + Views Bump), allow all media (and warn in backend)
           onlyReels={platform.id === 'instagram' && offer.type === 'views'}
         />
       )}
