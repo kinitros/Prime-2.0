@@ -226,9 +226,25 @@ app.get('/api/pix/status/:orderId', async (req, res) => {
                             order_id: orderId,
                             status: 'paid',
                             approved_at: new Date().toISOString(),
+                            customer: {
+                                name: transaction.data.customer_name,
+                                email: transaction.data.customer_email,
+                                phone: transaction.data.customer_phone,
+                                document: transaction.data.customer_document
+                            },
                             items: [{
-                                link: transaction.data.link || transaction.data.instagram_username
-                            }]
+                                service_type: transaction.data.service_type,
+                                quantity: transaction.data.quantity,
+                                unit_price: transaction.data.unit_price,
+                                total_amount: transaction.data.total_amount,
+                                link: transaction.data.link || transaction.data.instagram_username,
+                                platform: transaction.data.platform_id
+                            }],
+                            payment: {
+                                method: transaction.data.payment_method,
+                                total: transaction.data.total_amount
+                            },
+                            metadata: transaction.data.metadata
                         });
                     }
                 }
@@ -301,15 +317,31 @@ app.post('/api/webhook/pushinpay', async (req, res) => {
                     console.log(`[PushinPay Webhook] Transaction ${transaction.order_id} marked as paid`);
 
                     // Trigger internal webhook
-                    webhookService.trigger('order.approved', {
-                        order_id: transaction.order_id,
-                        status: 'paid',
-                        approved_at: new Date().toISOString(),
-                        pix_id: pixId,
-                        items: [{
-                            link: transaction.link || transaction.instagram_username
-                        }]
-                    });
+                        webhookService.trigger('order.approved', {
+                            order_id: transaction.order_id,
+                            status: 'paid',
+                            approved_at: new Date().toISOString(),
+                            pix_id: pixId,
+                            customer: {
+                                name: transaction.customer_name,
+                                email: transaction.customer_email,
+                                phone: transaction.customer_phone,
+                                document: transaction.customer_document
+                            },
+                            items: [{
+                                service_type: transaction.service_type,
+                                quantity: transaction.quantity,
+                                unit_price: transaction.unit_price,
+                                total_amount: transaction.total_amount,
+                                link: transaction.link || transaction.instagram_username,
+                                platform: transaction.platform_id
+                            }],
+                            payment: {
+                                method: transaction.payment_method,
+                                total: transaction.total_amount
+                            },
+                            metadata: transaction.metadata
+                        });
                 } else {
                     console.error('[PushinPay Webhook] Failed to update transaction:', updateResult.error);
                 }
