@@ -85,11 +85,13 @@ export interface InstagramPost {
     timestamp: number;
 }
 
-export const fetchInstagramPosts = async (username: string): Promise<InstagramPost[]> => {
+export const fetchInstagramPosts = async (username: string, onlyReels: boolean = false): Promise<InstagramPost[]> => {
     // Remove @ if present
     const cleanUsername = username.replace('@', '').trim();
 
-    const url = `${INSTAGRAM_BASE_URL}/v1/user_posts?username_or_id=${cleanUsername}`;
+    // Choose endpoint based on onlyReels flag
+    const endpoint = onlyReels ? 'user_reels' : 'user_posts';
+    const url = `${INSTAGRAM_BASE_URL}/v1/${endpoint}?username_or_id=${cleanUsername}`;
 
     const options = {
         method: 'GET',
@@ -113,15 +115,33 @@ export const fetchInstagramPosts = async (username: string): Promise<InstagramPo
             return [];
         }
 
-        return data.data.items.slice(0, 12).map((item: any) => ({
-            id: item.id,
-            shortcode: item.code,
-            display_url: `https://wsrv.nl/?url=${encodeURIComponent(item.image_versions2?.candidates?.[0]?.url || '')}`,
-            caption: item.caption?.text || '',
-            likes: item.like_count,
-            comments: item.comment_count,
-            timestamp: item.taken_at
-        }));
+        // Map response based on endpoint structure
+        if (onlyReels) {
+            // Structure for user_reels (based on provided payload)
+            return data.data.items.slice(0, 12).map((item: any) => {
+                const media = item.media;
+                return {
+                    id: media.id,
+                    shortcode: media.code || media.id, // Fallback to ID if code is missing
+                    display_url: `https://wsrv.nl/?url=${encodeURIComponent(media.image_versions2?.candidates?.[0]?.url || '')}`,
+                    caption: media.caption?.text || '',
+                    likes: media.like_count || 0,
+                    comments: media.comment_count || 0,
+                    timestamp: media.taken_at || Date.now() / 1000 // Fallback timestamp
+                };
+            });
+        } else {
+            // Original structure for user_posts
+            return data.data.items.slice(0, 12).map((item: any) => ({
+                id: item.id,
+                shortcode: item.code,
+                display_url: `https://wsrv.nl/?url=${encodeURIComponent(item.image_versions2?.candidates?.[0]?.url || '')}`,
+                caption: item.caption?.text || '',
+                likes: item.like_count,
+                comments: item.comment_count,
+                timestamp: item.taken_at
+            }));
+        }
 
     } catch (error) {
         console.error('Error fetching Instagram posts:', error);

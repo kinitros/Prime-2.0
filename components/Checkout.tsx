@@ -1022,7 +1022,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
             ...profileData,
             channelId: profileData.channelId || profileData.id // For YouTube
           }}
-          serviceType={offer.type}
+          onlyReels={platform.id === 'instagram' && offer.type === 'views'}
         />
       )}
     </div>

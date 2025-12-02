@@ -12,6 +12,7 @@ interface PostSelectorProps {
     onConfirm: (posts: InstagramPost[] | TikTokPost[] | YouTubeVideo[]) => void;
     initialSelectedPosts?: InstagramPost[] | TikTokPost[] | YouTubeVideo[];
     extraData?: any; // For platform-specific data (e.g., TikTok secUid)
+    onlyReels?: boolean; // New prop to filter only reels for Instagram
 }
 
 const PostSelector: React.FC<PostSelectorProps> = ({
@@ -22,7 +23,8 @@ const PostSelector: React.FC<PostSelectorProps> = ({
     packageQuantity,
     onConfirm,
     initialSelectedPosts = [],
-    extraData
+    extraData,
+    onlyReels = false // Default to false
 }) => {
     const [posts, setPosts] = useState<(InstagramPost | TikTokPost | YouTubeVideo)[]>([]);
     const [selectedPosts, setSelectedPosts] = useState<(InstagramPost | TikTokPost | YouTubeVideo)[]>(initialSelectedPosts);
@@ -49,7 +51,7 @@ const PostSelector: React.FC<PostSelectorProps> = ({
             let fetchedPosts: any[];
 
             if (platformId === 'instagram') {
-                fetchedPosts = await fetchInstagramPosts(username);
+                fetchedPosts = await fetchInstagramPosts(username, onlyReels);
             } else if (platformId === 'tiktok') {
                 // TikTok needs secUid from extraData
                 if (!extraData?.secUid) {
