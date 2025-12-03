@@ -338,7 +338,7 @@ const CRM: React.FC = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-xs text-slate-500 font-bold mb-1">Tipo de Serviço</p>
-                                        <p className="text-slate-900">{selectedOrder.service_type}</p>
+                                        <p className="text-slate-900">{selectedOrder.quantity} {selectedOrder.service_type}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500 font-bold mb-1">Perfil/Link</p>
@@ -348,7 +348,7 @@ const CRM: React.FC = () => {
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500 font-bold mb-1">Quantidade</p>
-                                        <p className="text-slate-900">{selectedOrder.quantity}</p>
+                                        <p className="text-slate-900">{selectedOrder.quantity?.toLocaleString('pt-BR')}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500 font-bold mb-1">Valor Total</p>
@@ -356,41 +356,90 @@ const CRM: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Selected Posts Section */}
+                                {/* Selected Posts Section (Grouped by Service) */}
                                 {selectedOrder.selected_posts && (() => {
                                     try {
                                         const posts = JSON.parse(selectedOrder.selected_posts);
                                         if (posts && posts.length > 0) {
+                                            // Define distributable services (Main + Bumps)
+                                            const services = [];
+                                            
+                                            // Add Main Service if applicable (likes or views)
+                                            const mainTitle = selectedOrder.service_type.toLowerCase();
+                                            if (mainTitle.includes('curtidas') || mainTitle.includes('likes') || mainTitle.includes('visualizações') || mainTitle.includes('views')) {
+                                                services.push({
+                                                    title: `${selectedOrder.quantity} ${selectedOrder.service_type}`,
+                                                    type: (mainTitle.includes('visualizações') || mainTitle.includes('views')) ? 'views' : 'likes'
+                                                });
+                                            }
+
+                                            // Add Order Bumps
+                                            if (selectedOrder.metadata?.order_bumps) {
+                                                selectedOrder.metadata.order_bumps.forEach(bump => {
+                                                     const title = bump.title.toLowerCase();
+                                                     const quantityMatch = bump.title.match(/(\d+)/);
+                                                     const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 0;
+                                                     
+                                                     if (title.includes('curtidas') || title.includes('likes') || title.includes('visualizações') || title.includes('views')) {
+                                                         services.push({
+                                                             title: bump.title, // Already includes quantity e.g. "100 Visualizações"
+                                                             type: (title.includes('visualizações') || title.includes('views')) ? 'views' : 'likes'
+                                                         });
+                                                     }
+                                                });
+                                            }
+
+                                            // If no services found (e.g. only followers), show nothing or just the list
+                                            if (services.length === 0) return null;
+
                                             return (
-                                                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                                                    <p className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
-                                                        <CheckCircle2 className="w-4 h-4" />
-                                                        {posts.length} {posts.length === 1 ? 'Post Selecionado' : 'Posts Selecionados'}
-                                                    </p>
-                                                    <div className="space-y-2">
-                                                        {posts.map((post: any, index: number) => (
-                                                            <div key={index} className="bg-white p-3 rounded-lg border border-blue-100 flex justify-between items-center">
-                                                                <div className="flex-1">
-                                                                    <a
-                                                                        href={post.post_url}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="text-sm text-blue-600 hover:underline font-medium flex items-center gap-1"
-                                                                    >
-                                                                        Post #{index + 1}
-                                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                                        </svg>
-                                                                    </a>
-                                                                    <p className="text-xs text-slate-500 mt-1 truncate">{post.post_url}</p>
-                                                                </div>
-                                                                <div className="text-right ml-4">
-                                                                    <p className="text-xs text-slate-500">Quantidade</p>
-                                                                    <p className="text-sm font-bold text-slate-900">{post.quantity_per_post}</p>
+                                                <div className="mt-6 space-y-4">
+                                                    {services.map((service, sIndex) => {
+                                                        // Filter posts that have this service type > 0
+                                                        const servicePosts = posts.filter((p: any) => 
+                                                            p.services && p.services[service.type] > 0
+                                                        );
+
+                                                        if (servicePosts.length === 0) return null;
+
+                                                        return (
+                                                            <div key={sIndex} className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                                                                <p className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                                                                    <CheckCircle2 className="w-4 h-4" />
+                                                                    {service.title}
+                                                                </p>
+                                                                <p className="text-xs text-blue-700 mb-3 font-medium ml-6">
+                                                                    {servicePosts.length} {servicePosts.length === 1 ? 'Post Selecionado' : 'Posts Selecionados'}
+                                                                </p>
+                                                                <div className="space-y-2">
+                                                                    {servicePosts.map((post: any, pIndex: number) => (
+                                                                        <div key={pIndex} className="bg-white p-3 rounded-lg border border-blue-100 flex justify-between items-center">
+                                                                            <div className="flex-1">
+                                                                                <a
+                                                                                    href={post.post_url}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="text-sm text-blue-600 hover:underline font-medium flex items-center gap-1"
+                                                                                >
+                                                                                    Post #{pIndex + 1}
+                                                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                                                    </svg>
+                                                                                </a>
+                                                                                <p className="text-xs text-slate-500 mt-1 truncate">{post.post_url}</p>
+                                                                            </div>
+                                                                            <div className="text-right ml-4">
+                                                                                <p className="text-xs text-slate-500">Quantidade</p>
+                                                                                <p className="text-sm font-bold text-slate-900">
+                                                                                    {post.services[service.type]}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                             </div>
-                                                        ))}
-                                                    </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             );
                                         }
@@ -409,16 +458,62 @@ const CRM: React.FC = () => {
                                         Order Bumps Adicionais
                                     </p>
                                     <div className="space-y-2">
-                                        {selectedOrder.metadata.order_bumps.map((bump, index) => (
-                                            <div key={index} className="bg-white p-3 rounded-lg border border-purple-100 flex justify-between items-center">
-                                                <div>
-                                                    <p className="text-sm font-bold text-slate-900">{bump.title}</p>
+                                        {selectedOrder.metadata.order_bumps.map((bump: any, index: number) => {
+                                            let quantity = 0;
+                                            const title = bump.title.toLowerCase();
+                                            
+                                            // 1. Priority: Get directly from metadata quantity field (most reliable)
+                                            if (bump.quantity) {
+                                                quantity = Number(bump.quantity);
+                                            }
+                                            
+                                            // 2. Fallback: Try to get quantity from title
+                                            if (!quantity) {
+                                                const quantityMatch = bump.title.match(/(\d+)/);
+                                                if (quantityMatch) {
+                                                    quantity = parseInt(quantityMatch[1]);
+                                                }
+                                            }
+                                            
+                                            // 3. Last Resort: Calculate from posts (only for interactions if still 0)
+                                            if (!quantity && selectedOrder.selected_posts) {
+                                                try {
+                                                    const posts = JSON.parse(selectedOrder.selected_posts);
+                                                    if (posts && posts.length > 0) {
+                                                        const isView = title.includes('visualizações') || title.includes('views');
+                                                        const isLike = title.includes('curtidas') || title.includes('likes');
+                                                        
+                                                        if (isView || isLike) {
+                                                            const type = isView ? 'views' : 'likes';
+                                                            const totalFromPosts = posts.reduce((acc: number, post: any) => {
+                                                                return acc + (post.services?.[type] || 0);
+                                                            }, 0);
+                                                            
+                                                            if (totalFromPosts > 0) quantity = totalFromPosts;
+                                                        }
+                                                    }
+                                                } catch (e) {
+                                                    console.error('Error calculating quantity from posts:', e);
+                                                }
+                                            }
+                                            
+                                            // Format the display title: "[Quantity] [Title]"
+                                            // If title already starts with number, don't duplicate
+                                            const displayTitle = quantity > 0 && !/^\d/.test(bump.title)
+                                                ? `${quantity} ${bump.title}`
+                                                : bump.title;
+
+                                            return (
+                                                <div key={index} className="bg-white p-3 rounded-lg border border-purple-100 flex justify-between items-center">
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-900">{displayTitle}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-sm font-bold text-slate-900">R$ {bump.price.toFixed(2)}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-sm font-bold text-slate-900">R$ {bump.price.toFixed(2)}</p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
