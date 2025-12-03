@@ -1,39 +1,22 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import PlatformCard from './components/PlatformCard';
-import Features from './components/Features';
-import Footer from './components/Footer';
-import BusinessServices from './components/BusinessServices';
-import VideoTestimonials from './components/VideoTestimonials';
-import FOMONotifications from './components/FOMONotifications';
-import WhatsAppFloat from './components/WhatsAppFloat';
-import Modal from './components/Modal';
-import PixelManager from './components/PixelManager';
-import { TESTIMONIALS } from './constants';
-import { PlatformData } from './types';
+import Navbar from '../components/Navbar';
+import PlatformCard from '../components/PlatformCard';
+import Features from '../components/Features';
+import Footer from '../components/Footer';
+import BusinessServices from '../components/BusinessServices';
+import VideoTestimonials from '../components/VideoTestimonials';
+import FOMONotifications from '../components/FOMONotifications';
+import WhatsAppFloat from '../components/WhatsAppFloat';
+import Modal from '../components/Modal';
+import { TESTIMONIALS } from '../constants';
+import { PlatformData } from '../types';
 import { ArrowRight, Star, CheckCircle2, Instagram, Youtube, Video, Play, ThumbsUp, Users, Eye, MessageCircle, CreditCard, ShieldCheck, Zap } from 'lucide-react';
-import { AdminProvider, useAdmin } from './context/AdminContext';
-import AdminDashboard from './components/admin/AdminDashboard';
-import PromotionPage from './pages/PromotionPage';
+import { useAdmin } from '../context/AdminContext';
 
-const MainApp: React.FC = () => {
-  const { platforms, testButtonUrl, faviconUrl } = useAdmin();
+const PromotionPage: React.FC = () => {
+  const { platforms, testButtonUrl } = useAdmin();
   const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Update Favicon dynamically
-  React.useEffect(() => {
-    if (faviconUrl) {
-      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.head.appendChild(link);
-      }
-      link.href = faviconUrl;
-    }
-  }, [faviconUrl]);
 
   const selectedPlatform = platforms.find(p => p.id === selectedPlatformId) || null;
 
@@ -224,12 +207,13 @@ const MainApp: React.FC = () => {
                           <Users className="w-6 h-6" />
                         </div>
                         <div className="text-left">
-                          <span className="block font-black text-slate-900 text-lg">Seguidores TikTok</span>
-                          <span className="text-xs text-slate-500 font-medium">Alta Qualidade</span>
+                          <span className="block font-black text-slate-900 text-lg">Comprar Seguidores</span>
+                          <span className="text-xs text-slate-500 font-medium">Reais e Ativos</span>
                         </div>
                         <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-slate-900 transition-colors" />
                       </div>
                     </button>
+
                     <button
                       onClick={() => {
                         const p = getPlatformById('tiktok');
@@ -238,14 +222,14 @@ const MainApp: React.FC = () => {
                       className="group bg-black p-[1px] rounded-xl hover:shadow-lg transition-all hover:-translate-y-1"
                     >
                       <div className="bg-white h-full w-full rounded-xl p-4 flex items-center gap-4 group-hover:bg-opacity-90 transition-all">
-                        <div className="bg-red-100 p-3 rounded-full text-red-600">
+                        <div className="bg-pink-100 p-3 rounded-full text-pink-600">
                           <ThumbsUp className="w-6 h-6" />
                         </div>
                         <div className="text-left">
-                          <span className="block font-black text-slate-900 text-lg">Curtidas TikTok</span>
-                          <span className="text-xs text-slate-500 font-medium">Impulsione seu vídeo</span>
+                          <span className="block font-black text-slate-900 text-lg">Comprar Curtidas</span>
+                          <span className="text-xs text-slate-500 font-medium">Entrega Rápida</span>
                         </div>
-                        <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-red-600 transition-colors" />
+                        <ArrowRight className="w-5 h-5 text-slate-300 ml-auto group-hover:text-pink-500 transition-colors" />
                       </div>
                     </button>
                   </>
@@ -456,29 +440,10 @@ const MainApp: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         platform={selectedPlatform}
+        isPromotion={true}
       />
     </div>
   );
 };
 
-import Login from './components/Login';
-import ThankYou from './components/ThankYou';
-
-const App: React.FC = () => {
-  return (
-    <Router>
-      <AdminProvider>
-        <PixelManager />
-        <Routes>
-          <Route path="/" element={<MainApp />} />
-          <Route path="/promocao" element={<PromotionPage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/thank-you" element={<ThankYou />} />
-        </Routes>
-      </AdminProvider>
-    </Router>
-  );
-};
-
-export default App;
+export default PromotionPage;

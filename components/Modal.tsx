@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, Check, ArrowLeft } from 'lucide-react';
-import { PlatformData, ServiceOffer } from '../types';
+import { PlatformData, ServiceOffer, Product } from '../types';
 import Checkout from './Checkout';
 import UsernameInput from './UsernameInput';
+import PackageSelector from './PackageSelector';
 import { InstagramProfile } from '../services/api';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   platform: PlatformData | null;
+  isPromotion?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform }) => {
-  const [view, setView] = useState<'selection' | 'username' | 'checkout'>('selection');
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform, isPromotion = false }) => {
+  const [view, setView] = useState<'selection' | 'package_selection' | 'username' | 'checkout'>('selection');
   const [selectedOffer, setSelectedOffer] = useState<ServiceOffer | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<Product | null>(null);
   const [userProfile, setUserProfile] = useState<InstagramProfile | null>(null);
 
   // Reset state when modal opens/closes or platform changes
@@ -21,6 +24,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform }) => {
     if (isOpen) {
       setView('selection');
       setSelectedOffer(null);
+      setSelectedPackage(null);
       setUserProfile(null);
     }
   }, [isOpen, platform]);
@@ -29,6 +33,15 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform }) => {
 
   const handleSelectOffer = (offer: ServiceOffer) => {
     setSelectedOffer(offer);
+
+    if (isPromotion) {
+      setView('package_selection');
+      // Default to first package
+      if (offer.products.length > 0) {
+        setSelectedPackage(offer.products[0]);
+      }
+      return;
+    }
 
     // Platforms with API verification
     const platformsWithAPIVerification = ['instagram', 'tiktok', 'youtube', 'kwai'];
@@ -49,6 +62,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform }) => {
   const handleBackToSelection = () => {
     setView('selection');
     setSelectedOffer(null);
+    setSelectedPackage(null);
+    setUserProfile(null);
+  };
+
+  const handleBackToPackageSelection = () => {
+    setView('package_selection');
     setUserProfile(null);
   };
 
@@ -57,9 +76,19 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform }) => {
 
     if (platformsWithAPIVerification.includes(platform.id)) {
       setView('username');
+    } else if (isPromotion) {
+      setView('package_selection');
     } else {
       handleBackToSelection();
     }
+  };
+
+  const handlePackageSelected = (pkg: Product) => {
+    setSelectedPackage(pkg);
+  };
+
+  const handlePackageConfirmed = () => {
+    setView('username');
   };
 
   return (
@@ -164,11 +193,39 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform }) => {
           </>
         )}
 
+        {view === 'package_selection' && selectedOffer && selectedPackage && (
+          <div className="flex flex-col h-full">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
+              <div className="flex items-center gap-4">
+                <button onClick={() => setView('selection')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                  <ArrowLeft className="w-5 h-5 text-slate-500" />
+                </button>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Selecione a quantidade</h3>
+                  <p className="text-xs text-slate-500">{selectedOffer.title}</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-900">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+              <PackageSelector
+                packages={selectedOffer.products}
+                selectedPackage={selectedPackage}
+                onSelect={handlePackageSelected}
+                offerType={selectedOffer.type}
+                onNext={handlePackageConfirmed}
+              />
+            </div>
+          </div>
+        )}
+
         {view === 'username' && (
           <UsernameInput
             platform={platform}
             onProfileFound={handleProfileFound}
-            onBack={handleBackToSelection}
+            onBack={isPromotion ? handleBackToPackageSelection : handleBackToSelection}
           />
         )}
 
@@ -178,6 +235,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform }) => {
             offer={selectedOffer}
             onBack={handleBackToUsername}
             profileData={userProfile}
+            initialStep={isPromotion ? 2 : 1}
+            initialPackage={isPromotion && selectedPackage ? selectedPackage : undefined}
           />
         )}
 
