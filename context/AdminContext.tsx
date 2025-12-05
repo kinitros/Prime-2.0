@@ -346,19 +346,27 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         
         console.log('Bump 1 created:', bumpsToCreate[0]);
 
-        // --- Helper to find price of other services ---
-        const findPrice = (type: 'likes' | 'views' | 'followers', qty: number): number => {
+        // --- Helper to find product by rank (index) ---
+        // This ensures that if user buys "Product 1" (Smallest), they get offered "Product 1" of other services.
+        // If they buy "Product 6" (Largest), they get offered "Product 6" of other services.
+        
+        // 1. Determine Rank of Current Product
+        // Sort current offer products by price ascending
+        const currentOfferProducts = [...offer.products].sort((a, b) => a.price - b.price);
+        const currentProductRank = currentOfferProducts.findIndex(p => p.id === product.id);
+        
+        console.log(`Current Product Rank: ${currentProductRank + 1} of ${currentOfferProducts.length}`);
+
+        const findProductByRank = (type: 'likes' | 'views' | 'followers'): Product | null => {
             // Filter offers by type first
             const typeOffers = platform.offers.filter(o => o.type === type);
             
             if (typeOffers.length === 0) {
                 console.log(`No offers found for type ${type}`);
-                return 0;
+                return null;
             }
 
             // Smart Matching: Try to match the "quality" (Brasileiros vs Mundiais)
-            // If current offer title contains "Brasileiros", look for "Brasileiros" in target
-            // If current offer title contains "Mundiais", look for "Mundiais" in target
             const isBR = offer.title.toLowerCase().includes('brasileiros') || offer.title.toLowerCase().includes('br');
             const isGlobal = offer.title.toLowerCase().includes('mundiais') || offer.title.toLowerCase().includes('mundial');
 
@@ -372,23 +380,23 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 if (globalOffer) targetOffer = globalOffer;
             }
 
-            console.log(`Searching price for ${type} qty ${qty} in offer: ${targetOffer.title} (Source was: ${offer.title})`);
+            console.log(`Target Offer for ${type}: ${targetOffer.title}`);
 
-            // Try exact match
-            const exactMatch = targetOffer.products.find(p => p.quantity === qty);
-            if (exactMatch) {
-                console.log(`Exact match found for ${type}:`, exactMatch.price);
-                return exactMatch.price;
+            // Sort target products by price
+            const sortedTargetProducts = [...targetOffer.products].sort((a, b) => a.price - b.price);
+            
+            // Try to get product at same rank
+            if (currentProductRank >= 0 && currentProductRank < sortedTargetProducts.length) {
+                return sortedTargetProducts[currentProductRank];
+            }
+            
+            // Fallback: If rank doesn't exist (e.g. target has fewer products), take the last one (largest)
+            // Or maybe the middle one? Let's take the last one for now as safe fallback
+            if (sortedTargetProducts.length > 0) {
+                return sortedTargetProducts[sortedTargetProducts.length - 1];
             }
 
-            // Try closest match (simple logic)
-            const sortedProducts = [...targetOffer.products].sort((a, b) => Math.abs(a.quantity - qty) - Math.abs(b.quantity - qty));
-            if (sortedProducts.length > 0) {
-                const reference = sortedProducts[0];
-                console.log(`Closest match found for ${type} (${reference.quantity}):`, reference.price);
-                return reference.price;
-            }
-            return 0;
+            return null;
         };
 
         // --- BUMP 2 & 3: Complementary Services (Cross-sell) ---
@@ -409,9 +417,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
         // else if (offer.type === 'followers') -> default is already set correctly
 
-        // --- BUMP 2: First Complementary (Same Quantity), 20% Visual OFF ---
-        const priceBump2 = findPrice(typeBump2, product.quantity);
-        if (priceBump2 > 0) {
+        // --- BUMP 2: First Complementary (Same Rank), 20% Visual OFF ---
+        const productBump2 = findProductByRank(typeBump2);
+        if (productBump2) {
             const titleMap = {
                 'followers': `Seguidores ${platformName}`,
                 'likes': `Curtidas ${platformName}`,
@@ -419,20 +427,19 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             };
             
             bumpsToCreate.push({
-                title: `${product.quantity} ${titleMap[typeBump2]}`,
-                price: priceBump2,
+                title: `${productBump2.quantity} ${titleMap[typeBump2]}`,
+                price: productBump2.price,
                 discount_percentage: 20, // Visual only
                 position: 1
             });
         } else {
-            console.warn(`Could not find price for Bump 2 (${typeBump2})`);
+            console.warn(`Could not find product for Bump 2 (${typeBump2})`);
         }
 
-        // --- BUMP 3: Second Complementary (Double Quantity), 20% Visual OFF ---
-        const qtyBump3 = product.quantity * 2;
-        const priceBump3 = findPrice(typeBump3, qtyBump3);
+        // --- BUMP 3: Second Complementary (Same Rank), 20% Visual OFF ---
+        const productBump3 = findProductByRank(typeBump3);
         
-        if (priceBump3 > 0) {
+        if (productBump3) {
              const titleMap = {
                 'followers': `Seguidores ${platformName}`,
                 'likes': `Curtidas ${platformName}`,
@@ -440,13 +447,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             };
 
             bumpsToCreate.push({
-                title: `${qtyBump3} ${titleMap[typeBump3]}`,
-                price: priceBump3,
+                title: `${productBump3.quantity} ${titleMap[typeBump3]}`,
+                price: productBump3.price,
                 discount_percentage: 20, // Visual only
                 position: 2
             });
         } else {
-             console.warn(`Could not find price for Bump 3 (${typeBump3})`);
+             console.warn(`Could not find product for Bump 3 (${typeBump3})`);
         }
         
         console.log('Bumps to create:', bumpsToCreate);
