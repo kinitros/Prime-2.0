@@ -334,7 +334,8 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
       .filter(bump => selectedBumps.includes(bump.id))
       .forEach(bump => {
         const title = bump.title.toLowerCase();
-        const match = bump.title.match(/(\d+)/);
+        // Improved regex to match quantity anywhere in string, handling dots/commas
+        const match = bump.title.replace(/\./g, '').match(/(\d+)/);
         const quantity = match ? parseInt(match[1]) : 0;
         
         if (title.includes('curtidas') || title.includes('likes')) {
@@ -494,9 +495,12 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
             const posts = serviceDistribution[service.id] || [];
             if (posts.length === 0) return;
             
-            const quantityPerPost = Math.floor(service.quantity / posts.length);
+            // Fix: Ensure quantity is distributed correctly, handling potential division remainders or 0
+            const quantity = service.quantity || 0;
+            const quantityPerPost = Math.floor(quantity / posts.length);
+            const remainder = quantity % posts.length;
             
-            posts.forEach(post => {
+            posts.forEach((post, index) => {
                 const postId = 'id' in post ? post.id : (post as YouTubeVideo).video_id;
                 
                 if (!postsMap.has(postId)) {
@@ -517,10 +521,14 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                 }
                 
                 const entry = postsMap.get(postId);
+                // Distribute remainder to first few posts to ensure total matches
+                const extra = index < remainder ? 1 : 0;
+                const amountToAdd = quantityPerPost + extra;
+
                 if (service.type === 'likes') {
-                    entry.services.likes += quantityPerPost;
+                    entry.services.likes += amountToAdd;
                 } else {
-                    entry.services.views += quantityPerPost;
+                    entry.services.views += amountToAdd;
                 }
             });
         });
@@ -561,14 +569,18 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
           order_bumps: orderBumps
             .filter(b => selectedBumps.includes(b.id))
             .map(b => {
-              // Extract quantity from title (e.g. "100 curtidas" -> quantity: 100, title: "curtidas")
-              const match = b.title.match(/^(\d+)\s+(.+)$/);
+              // Extract quantity from title (e.g. "1.000 curtidas" -> quantity: 1000)
+              // Handle "1.000" format by removing dots before parsing
+              const cleanTitleForQty = b.title.replace(/\./g, '');
+              const match = cleanTitleForQty.match(/(\d+)/);
               const quantity = match ? parseInt(match[1]) : 1;
-              const cleanTitle = match ? match[2] : b.title;
+              
+              // Keep original title for display
+              const cleanTitle = b.title.replace(/^\d+\s+/, ''); // Remove leading number for cleaner type description if needed
 
               return {
                 id: b.id,
-                title: cleanTitle,
+                title: b.title, // Use full title
                 quantity: quantity,
                 price: b.price,
                 discount_percentage: b.discount_percentage
