@@ -82,8 +82,8 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
     paymentMethod: 'pix'
   });
 
-  // Use products from the offer prop
-  const packages = offer.products;
+  // Use products from the offer prop (filter active ones)
+  const packages = offer.products.filter(p => p.is_active !== false);
 
   // Default to the first package or the one that matches the starting price if possible
   const [selectedPackage, setSelectedPackage] = useState<Product>(initialPackage || packages[0] || { quantity: 0, price: 0, originalPrice: 0, id: 'default' });

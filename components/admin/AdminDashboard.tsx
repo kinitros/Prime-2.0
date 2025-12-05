@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { PlatformId, Product, ServiceOffer, OrderBump } from '../../types';
-import { Plus, Trash2, Edit2, Save, X, ArrowLeft, LogOut, LayoutGrid, Users, Globe, SettingsIcon, UserPlus, Heart, Eye, Target, GripVertical, GripHorizontal } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, ArrowLeft, LogOut, LayoutGrid, Users, Globe, SettingsIcon, UserPlus, Heart, Eye, EyeOff, Target, GripVertical, GripHorizontal, Wand2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -11,12 +11,13 @@ import Settings from './Settings';
 import Pixels from './Pixels';
 
 const AdminDashboard: React.FC = () => {
-    const { platforms, updateProduct, addProduct, deleteProduct, reorderProduct, reorderProductsBatch, reorderServicesBatch, addOffer, updateOffer, deleteOffer, addOrderBump, updateOrderBump, deleteOrderBump, isLoading: isDataLoading } = useAdmin();
+    const { platforms, updateProduct, addProduct, deleteProduct, reorderProduct, reorderProductsBatch, reorderServicesBatch, addOffer, updateOffer, deleteOffer, addOrderBump, updateOrderBump, deleteOrderBump, generateAutoBumps, isLoading: isDataLoading } = useAdmin();
     const [selectedPlatformId, setSelectedPlatformId] = useState<PlatformId>(PlatformId.INSTAGRAM);
     const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isAddingProduct, setIsAddingProduct] = useState(false);
     const [isAddingService, setIsAddingService] = useState(false);
+    const [confirmAutoBumps, setConfirmAutoBumps] = useState<{ platformId: string, offerId: string, productId: string } | null>(null);
     const [currentView, setCurrentView] = useState<'products' | 'crm' | 'webhooks' | 'settings' | 'pixels'>('crm');
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -355,6 +356,47 @@ const AdminDashboard: React.FC = () => {
                                     </button>
                                 </div>
 
+                                {/* Auto Bumps Confirmation Modal */}
+                                {confirmAutoBumps && (
+                                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setConfirmAutoBumps(null)}>
+                                        <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center gap-3 mb-4 text-purple-600">
+                                                <div className="p-2 bg-purple-100 rounded-lg">
+                                                    <Wand2 className="w-6 h-6" />
+                                                </div>
+                                                <h3 className="text-lg font-bold text-slate-900">Gerar Automático</h3>
+                                            </div>
+                                            <div className="text-slate-600 text-sm mb-6 leading-relaxed">
+                                                Isso criará <strong>3 Order Bumps</strong> automaticamente para este produto:
+                                                <ul className="list-disc ml-4 mt-2 space-y-1 text-xs">
+                                                    <li>Upsell de quantidade (25% OFF)</li>
+                                                    <li>Pacote de Curtidas (Mesma qtd)</li>
+                                                    <li>Pacote de Visualizações (Dobro qtd)</li>
+                                                </ul>
+                                            </div>
+                                            <div className="flex justify-end gap-3">
+                                                <button
+                                                    onClick={() => setConfirmAutoBumps(null)}
+                                                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium text-sm transition-colors"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirmAutoBumps) {
+                                                            generateAutoBumps(confirmAutoBumps.platformId, confirmAutoBumps.offerId, confirmAutoBumps.productId);
+                                                            setConfirmAutoBumps(null);
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg font-bold text-sm hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200"
+                                                >
+                                                    Gerar Agora
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Add Service Modal */}
                                 {isAddingService && (
                                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setIsAddingService(false)}>
@@ -668,6 +710,14 @@ const AdminDashboard: React.FC = () => {
                                                                                         />
                                                                                         <span className="text-sm">Popular</span>
                                                                                     </label>
+                                                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                                                        <input
+                                                                                            type="checkbox"
+                                                                                            checked={editingProduct.is_active !== false}
+                                                                                            onChange={e => setEditingProduct({ ...editingProduct, is_active: e.target.checked })}
+                                                                                        />
+                                                                                        <span className="text-sm">Ativo</span>
+                                                                                    </label>
                                                                                     <div className="col-span-4">
                                                                                         <input
                                                                                             type="text"
@@ -697,23 +747,37 @@ const AdminDashboard: React.FC = () => {
                                                                                         {product.popular && (
                                                                                             <span className="bg-accent/10 text-accent text-xs font-bold px-2 py-1 rounded-full">POPULAR</span>
                                                                                         )}
+                                                                                        {product.is_active === false && (
+                                                                                            <span className="bg-slate-100 text-slate-500 text-xs font-bold px-2 py-1 rounded-full border border-slate-200">INATIVO</span>
+                                                                                        )}
                                                                                     </div>
 
                                                                                     {/* Order Bumps Section - Always show */}
                                                                                     <div className="mt-4 pt-4 border-t border-slate-200">
                                                                                         <div className="flex items-center justify-between mb-3">
                                                                                             <h5 className="text-xs font-bold text-slate-600 uppercase">Order Bumps ({product.order_bumps?.length || 0})</h5>
-                                                                                            {isAddingBump !== product.id && (
-                                                                                                <button
-                                                                                                    onClick={() => {
-                                                                                                        setIsAddingBump(product.id);
-                                                                                                        setNewBumpData({ title: '', price: 0, discount_percentage: 20 });
-                                                                                                    }}
-                                                                                                    className="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors flex items-center gap-1"
-                                                                                                >
-                                                                                                    <Plus className="w-3 h-3" /> Adicionar Bump
-                                                                                                </button>
-                                                                                            )}
+                                                                                            <div className="flex gap-2">
+                                                                                                {selectedPlatformId === 'instagram' && (
+                                                                                                    <button
+                                                                                                        onClick={() => setConfirmAutoBumps({ platformId: selectedPlatformId, offerId: selectedOffer.id, productId: product.id })}
+                                                                                                        className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors flex items-center gap-1"
+                                                                                                        title="Gerar Bumps Automáticos"
+                                                                                                    >
+                                                                                                        <Wand2 className="w-3 h-3" /> Auto
+                                                                                                    </button>
+                                                                                                )}
+                                                                                                {isAddingBump !== product.id && (
+                                                                                                    <button
+                                                                                                        onClick={() => {
+                                                                                                            setIsAddingBump(product.id);
+                                                                                                            setNewBumpData({ title: '', price: 0, discount_percentage: 20 });
+                                                                                                        }}
+                                                                                                        className="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors flex items-center gap-1"
+                                                                                                    >
+                                                                                                        <Plus className="w-3 h-3" /> Adicionar Bump
+                                                                                                    </button>
+                                                                                                )}
+                                                                                            </div>
                                                                                         </div>
 
                                                                                         {/* Add Bump Form */}
@@ -844,6 +908,13 @@ const AdminDashboard: React.FC = () => {
                                                                                     </>
                                                                                 ) : (
                                                                                     <>
+                                                                                        <button 
+                                                                                            onClick={() => updateProduct(selectedPlatformId, selectedOffer.id, { ...product, is_active: product.is_active === false })}
+                                                                                            className={`p-2 rounded-lg transition-colors ${product.is_active !== false ? 'text-slate-400 hover:text-slate-600 hover:bg-slate-100' : 'text-slate-400 hover:text-primary hover:bg-primary/5'}`}
+                                                                                            title={product.is_active !== false ? "Desativar Produto" : "Ativar Produto"}
+                                                                                        >
+                                                                                            {product.is_active !== false ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                                                                        </button>
                                                                                         <button onClick={() => setEditingProduct(product)} className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors">
                                                                                             <Edit2 className="w-4 h-4" />
                                                                                         </button>

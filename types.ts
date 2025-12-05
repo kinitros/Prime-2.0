@@ -25,6 +25,7 @@ export interface Product {
   originalPrice: number;
   popular?: boolean;
   credit_card_url?: string;
+  is_active?: boolean;
   order_bumps?: OrderBump[];
 }
 

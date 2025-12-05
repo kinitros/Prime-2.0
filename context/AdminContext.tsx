@@ -33,6 +33,7 @@ interface AdminContextType {
     addOrderBump: (productId: string, bump: Omit<OrderBump, 'id' | 'product_id'>) => Promise<void>;
     updateOrderBump: (bumpId: string, bump: Partial<OrderBump>) => Promise<void>;
     deleteOrderBump: (bumpId: string) => Promise<void>;
+    generateAutoBumps: (platformId: string, offerId: string, productId: string) => Promise<void>;
     refreshData: () => Promise<void>;
 }
 
@@ -213,6 +214,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                                     originalPrice: product.original_price,
                                     popular: product.popular || false,
                                     credit_card_url: product.credit_card_url,
+                                    is_active: product.is_active !== false, // Default to true if null/undefined
                                     order_bumps: productBumps
                                 };
                             });
@@ -260,6 +262,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 original_price: updatedProduct.originalPrice,
                 popular: updatedProduct.popular || false,
                 credit_card_url: updatedProduct.credit_card_url,
+                is_active: updatedProduct.is_active,
                 updated_at: new Date().toISOString()
             })
             .eq('id', updatedProduct.id);
@@ -282,7 +285,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 price: newProduct.price,
                 original_price: newProduct.originalPrice,
                 popular: newProduct.popular || false,
-                credit_card_url: newProduct.credit_card_url
+                credit_card_url: newProduct.credit_card_url,
+                is_active: true
             });
 
         if (error) {
@@ -305,6 +309,122 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         await refreshData();
+    };
+
+    const generateAutoBumps = async (platformId: string, offerId: string, productId: string) => {
+        console.log('Starting generateAutoBumps...', { platformId, offerId, productId });
+        
+        // 1. Find the current product to get quantity and base info
+        const platform = platforms.find(p => p.id === platformId);
+        const offer = platform?.offers.find(o => o.id === offerId);
+        const product = offer?.products.find(p => p.id === productId);
+
+        if (!platform || !offer || !product) {
+            console.error('Product not found for auto bumps generation', { platform, offer, product });
+            return;
+        }
+        
+        console.log('Product found:', product);
+
+        // Only support Instagram for now as per requirement, but logic is extensible
+        if (platformId !== 'instagram') {
+            alert('A geração automática está configurada apenas para Instagram no momento.');
+            return;
+        }
+
+        const bumpsToCreate: Omit<OrderBump, 'id' | 'product_id'>[] = [];
+
+        // --- BUMP 1: Same product, 25% OFF ---
+        // Price calculation: Base price * 0.75, rounded to .90
+        const priceBump1Raw = product.price * 0.75;
+        const priceBump1 = Math.floor(priceBump1Raw) + 0.90;
+        
+        bumpsToCreate.push({
+            title: `${product.quantity} ${offer.title}`,
+            price: priceBump1,
+            discount_percentage: 25,
+            position: 0
+        });
+        
+        console.log('Bump 1 created:', bumpsToCreate[0]);
+
+        // --- Helper to find price of other services ---
+        const findPrice = (type: 'likes' | 'views', qty: number): number => {
+            const targetOffer = platform.offers.find(o => o.type === type);
+            if (!targetOffer) {
+                console.log(`Offer type ${type} not found`);
+                return 0;
+            }
+            
+            console.log(`Searching price for ${type} qty ${qty} in offer:`, targetOffer.title);
+
+            // Try exact match
+            const exactMatch = targetOffer.products.find(p => p.quantity === qty);
+            if (exactMatch) {
+                console.log(`Exact match found for ${type}:`, exactMatch.price);
+                return exactMatch.price;
+            }
+
+            // Try closest match (simple logic)
+            const sortedProducts = [...targetOffer.products].sort((a, b) => Math.abs(a.quantity - qty) - Math.abs(b.quantity - qty));
+            if (sortedProducts.length > 0) {
+                const reference = sortedProducts[0];
+                console.log(`Closest match found for ${type} (${reference.quantity}):`, reference.price);
+                return reference.price;
+            }
+            return 0;
+        };
+
+        // --- BUMP 2: Likes (Same Quantity), 20% Visual OFF ---
+        const likesPrice = findPrice('likes', product.quantity);
+        if (likesPrice > 0) {
+            bumpsToCreate.push({
+                title: `${product.quantity} Curtidas Instagram`,
+                price: likesPrice,
+                discount_percentage: 20, // Visual only
+                position: 1
+            });
+        } else {
+            console.warn('Could not find price for Likes bump');
+        }
+
+        // --- BUMP 3: Views (Double Quantity), 20% Visual OFF ---
+        const viewsQuantity = product.quantity * 2;
+        const viewsPrice = findPrice('views', viewsQuantity);
+        if (viewsPrice > 0) {
+            bumpsToCreate.push({
+                title: `${viewsQuantity} Visualizações Instagram`,
+                price: viewsPrice,
+                discount_percentage: 20, // Visual only
+                position: 2
+            });
+        } else {
+             console.warn('Could not find price for Views bump');
+        }
+        
+        console.log('Bumps to create:', bumpsToCreate);
+
+        // Insert all bumps
+        try {
+            // Get current highest position
+            const currentMaxPos = product.order_bumps && product.order_bumps.length > 0 
+                ? Math.max(...product.order_bumps.map(b => b.position)) 
+                : -1;
+
+            let nextPos = currentMaxPos + 1;
+
+            for (const bump of bumpsToCreate) {
+                console.log(`Adding bump: ${bump.title} at pos ${nextPos}`);
+                await addOrderBump(productId, { ...bump, position: nextPos });
+                nextPos++;
+            }
+            
+            // Removed alert to improve UX
+            console.log('Auto bumps generation completed successfully');
+        } catch (error) {
+            console.error('Error generating auto bumps:', error);
+            alert('Erro ao gerar bumps automáticos. Verifique o console.');
+        }
     };
 
     const reorderProduct = async (platformId: string, offerId: string, productId: string, direction: 'up' | 'down') => {
@@ -639,6 +759,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             addOrderBump,
             updateOrderBump,
             deleteOrderBump,
+            generateAutoBumps,
             refreshData
         }}>
             {children}

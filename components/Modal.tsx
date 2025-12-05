@@ -33,12 +33,13 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform, isPromotion = 
 
   const handleSelectOffer = (offer: ServiceOffer) => {
     setSelectedOffer(offer);
+    const activeProducts = offer.products.filter(p => p.is_active !== false);
 
     if (isPromotion) {
       setView('package_selection');
-      // Default to first package
-      if (offer.products.length > 0) {
-        setSelectedPackage(offer.products[0]);
+      // Default to first active package
+      if (activeProducts.length > 0) {
+        setSelectedPackage(activeProducts[0]);
       }
       return;
     }
@@ -211,7 +212,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform, isPromotion = 
             </div>
             <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
               <PackageSelector
-                packages={selectedOffer.products}
+                packages={selectedOffer.products.filter(p => p.is_active !== false)}
                 selectedPackage={selectedPackage}
                 onSelect={handlePackageSelected}
                 offerType={selectedOffer.type}
