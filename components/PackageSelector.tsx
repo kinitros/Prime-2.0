@@ -44,7 +44,7 @@ const PackageSelector: React.FC<PackageSelectorProps> = ({
               </div>
             )}
             <span className="text-lg font-black text-slate-900 tracking-tight mb-1">
-              {pkg.quantity >= 1000 ? `${pkg.quantity / 1000}k` : pkg.quantity}
+              {pkg.quantity.toLocaleString('pt-BR')}
             </span>
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
               {offerType === 'followers' ? 'Seguidores' : offerType === 'likes' ? 'Curtidas' : 'Visualizações'}
