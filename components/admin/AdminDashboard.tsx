@@ -318,11 +318,18 @@ const AdminDashboard: React.FC = () => {
                                                                     className={`
                                                                         group flex items-center gap-2 pb-3 px-2 font-medium text-sm transition-colors relative whitespace-nowrap cursor-grab active:cursor-grabbing
                                                                         ${selectedOfferId === offer.id ? 'text-primary' : 'text-slate-500 hover:text-slate-700'}
+                                                                        ${offer.is_active === false ? 'opacity-50 grayscale' : ''}
                                                                         ${snapshot.isDragging ? 'bg-white shadow-lg rounded-lg p-2 border border-slate-200' : ''}
                                                                     `}
                                                                 >
                                                                     <GripVertical className={`w-3 h-3 ${selectedOfferId === offer.id ? 'text-primary/30' : 'text-slate-300'} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                                                                    {offer.title}
+                                                                    
+                                                                    {/* Service Title */}
+                                                                    <span className="flex items-center gap-2">
+                                                                        {offer.title}
+                                                                        {offer.is_active === false && <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 rounded">OFF</span>}
+                                                                    </span>
+
                                                                     {selectedOfferId === offer.id && !snapshot.isDragging && (
                                                                         <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />
                                                                     )}
@@ -533,7 +540,7 @@ const AdminDashboard: React.FC = () => {
                                                         />
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center pt-2">
+                                                <div className="flex items-center pt-2 gap-6">
                                                     <label className="flex items-center gap-2 cursor-pointer">
                                                         <input
                                                             type="checkbox"
@@ -542,6 +549,16 @@ const AdminDashboard: React.FC = () => {
                                                             className="rounded text-primary focus:ring-primary w-4 h-4"
                                                         />
                                                         <span className="text-sm text-slate-700 font-medium">Mostrar na página inicial?</span>
+                                                    </label>
+                                                    
+                                                    <label className="flex items-center gap-2 cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={editingService.is_active !== false}
+                                                            onChange={e => setEditingService({ ...editingService, is_active: e.target.checked })}
+                                                            className="rounded text-primary focus:ring-primary w-4 h-4"
+                                                        />
+                                                        <span className="text-sm text-slate-700 font-medium">Ativo?</span>
                                                     </label>
                                                 </div>
                                             </div>
@@ -757,15 +774,13 @@ const AdminDashboard: React.FC = () => {
                                                                                         <div className="flex items-center justify-between mb-3">
                                                                                             <h5 className="text-xs font-bold text-slate-600 uppercase">Order Bumps ({product.order_bumps?.length || 0})</h5>
                                                                                             <div className="flex gap-2">
-                                                                                                {selectedPlatformId === 'instagram' && (
-                                                                                                    <button
-                                                                                                        onClick={() => setConfirmAutoBumps({ platformId: selectedPlatformId, offerId: selectedOffer.id, productId: product.id })}
-                                                                                                        className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors flex items-center gap-1"
-                                                                                                        title="Gerar Bumps Automáticos"
-                                                                                                    >
-                                                                                                        <Wand2 className="w-3 h-3" /> Auto
-                                                                                                    </button>
-                                                                                                )}
+                                                                                                <button
+                                                                                                    onClick={() => setConfirmAutoBumps({ platformId: selectedPlatformId, offerId: selectedOffer.id, productId: product.id })}
+                                                                                                    className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors flex items-center gap-1"
+                                                                                                    title="Gerar Bumps Automáticos"
+                                                                                                >
+                                                                                                    <Wand2 className="w-3 h-3" /> Auto
+                                                                                                </button>
                                                                                                 {isAddingBump !== product.id && (
                                                                                                     <button
                                                                                                         onClick={() => {

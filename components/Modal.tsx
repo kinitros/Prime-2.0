@@ -132,7 +132,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, platform, isPromotion = 
               </h4>
 
               <div className="space-y-4">
-                {platform.offers.map((offer) => {
+                {platform.offers.filter(offer => offer.is_active !== false).map((offer) => {
                   // Correct Formula: Original = Price / (1 - Discount%)
                   const originalPrice = offer.priceStart / (1 - (offer.discount / 100));
 

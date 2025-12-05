@@ -37,6 +37,7 @@ export interface ServiceOffer {
   discount: number; // percentage
   products: Product[];
   showOnHome?: boolean;
+  is_active?: boolean;
 }
 
 export interface PlatformData {

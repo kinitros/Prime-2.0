@@ -226,6 +226,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                             priceStart: offer.price_start,
                             discount: offer.discount,
                             showOnHome: offer.show_on_home ?? true,
+                            is_active: offer.is_active !== false, // Default to true
                             products: offerProducts
                         } as ServiceOffer;
                     });
@@ -326,11 +327,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         
         console.log('Product found:', product);
 
-        // Only support Instagram for now as per requirement, but logic is extensible
-        if (platformId !== 'instagram') {
-            alert('A geração automática está configurada apenas para Instagram no momento.');
-            return;
-        }
+        // Dynamic Platform Name for Titles (e.g., "Instagram", "TikTok", "YouTube")
+        const platformName = platform.name;
 
         const bumpsToCreate: Omit<OrderBump, 'id' | 'product_id'>[] = [];
 
@@ -415,9 +413,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const priceBump2 = findPrice(typeBump2, product.quantity);
         if (priceBump2 > 0) {
             const titleMap = {
-                'followers': 'Seguidores Instagram',
-                'likes': 'Curtidas Instagram',
-                'views': 'Visualizações Instagram'
+                'followers': `Seguidores ${platformName}`,
+                'likes': `Curtidas ${platformName}`,
+                'views': `Visualizações ${platformName}`
             };
             
             bumpsToCreate.push({
@@ -436,9 +434,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         
         if (priceBump3 > 0) {
              const titleMap = {
-                'followers': 'Seguidores Instagram',
-                'likes': 'Curtidas Instagram',
-                'views': 'Visualizações Instagram'
+                'followers': `Seguidores ${platformName}`,
+                'likes': `Curtidas ${platformName}`,
+                'views': `Visualizações ${platformName}`
             };
 
             bumpsToCreate.push({
@@ -568,6 +566,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 price_start: updatedOffer.priceStart,
                 discount: updatedOffer.discount,
                 show_on_home: updatedOffer.showOnHome ?? true,
+                is_active: updatedOffer.is_active,
                 updated_at: new Date().toISOString()
             })
             .eq('id', updatedOffer.id);
@@ -590,7 +589,8 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 title: newOffer.title,
                 price_start: newOffer.priceStart,
                 discount: newOffer.discount,
-                show_on_home: newOffer.showOnHome ?? true
+                show_on_home: newOffer.showOnHome ?? true,
+                is_active: true
             });
 
         if (error) {
