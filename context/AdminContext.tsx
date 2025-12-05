@@ -349,14 +349,32 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         console.log('Bump 1 created:', bumpsToCreate[0]);
 
         // --- Helper to find price of other services ---
-        const findPrice = (type: 'likes' | 'views', qty: number): number => {
-            const targetOffer = platform.offers.find(o => o.type === type);
-            if (!targetOffer) {
-                console.log(`Offer type ${type} not found`);
+        const findPrice = (type: 'likes' | 'views' | 'followers', qty: number): number => {
+            // Filter offers by type first
+            const typeOffers = platform.offers.filter(o => o.type === type);
+            
+            if (typeOffers.length === 0) {
+                console.log(`No offers found for type ${type}`);
                 return 0;
             }
-            
-            console.log(`Searching price for ${type} qty ${qty} in offer:`, targetOffer.title);
+
+            // Smart Matching: Try to match the "quality" (Brasileiros vs Mundiais)
+            // If current offer title contains "Brasileiros", look for "Brasileiros" in target
+            // If current offer title contains "Mundiais", look for "Mundiais" in target
+            const isBR = offer.title.toLowerCase().includes('brasileiros') || offer.title.toLowerCase().includes('br');
+            const isGlobal = offer.title.toLowerCase().includes('mundiais') || offer.title.toLowerCase().includes('mundial');
+
+            let targetOffer = typeOffers[0]; // Default to first one found
+
+            if (isBR) {
+                const brOffer = typeOffers.find(o => o.title.toLowerCase().includes('brasileiros') || o.title.toLowerCase().includes('br'));
+                if (brOffer) targetOffer = brOffer;
+            } else if (isGlobal) {
+                const globalOffer = typeOffers.find(o => o.title.toLowerCase().includes('mundiais') || o.title.toLowerCase().includes('mundial'));
+                if (globalOffer) targetOffer = globalOffer;
+            }
+
+            console.log(`Searching price for ${type} qty ${qty} in offer: ${targetOffer.title} (Source was: ${offer.title})`);
 
             // Try exact match
             const exactMatch = targetOffer.products.find(p => p.quantity === qty);
