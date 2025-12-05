@@ -375,31 +375,62 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             return 0;
         };
 
-        // --- BUMP 2: Likes (Same Quantity), 20% Visual OFF ---
-        const likesPrice = findPrice('likes', product.quantity);
-        if (likesPrice > 0) {
+        // --- BUMP 2 & 3: Complementary Services (Cross-sell) ---
+        // Logic Matrix:
+        // Main: Followers -> Bump 2: Likes, Bump 3: Views
+        // Main: Likes     -> Bump 2: Followers, Bump 3: Views
+        // Main: Views     -> Bump 2: Followers, Bump 3: Likes
+
+        let typeBump2: 'followers' | 'likes' | 'views' = 'likes';
+        let typeBump3: 'followers' | 'likes' | 'views' = 'views';
+
+        if (offer.type === 'likes') {
+            typeBump2 = 'followers';
+            typeBump3 = 'views';
+        } else if (offer.type === 'views') {
+            typeBump2 = 'followers';
+            typeBump3 = 'likes';
+        }
+        // else if (offer.type === 'followers') -> default is already set correctly
+
+        // --- BUMP 2: First Complementary (Same Quantity), 20% Visual OFF ---
+        const priceBump2 = findPrice(typeBump2, product.quantity);
+        if (priceBump2 > 0) {
+            const titleMap = {
+                'followers': 'Seguidores Instagram',
+                'likes': 'Curtidas Instagram',
+                'views': 'Visualizações Instagram'
+            };
+            
             bumpsToCreate.push({
-                title: `${product.quantity} Curtidas Instagram`,
-                price: likesPrice,
+                title: `${product.quantity} ${titleMap[typeBump2]}`,
+                price: priceBump2,
                 discount_percentage: 20, // Visual only
                 position: 1
             });
         } else {
-            console.warn('Could not find price for Likes bump');
+            console.warn(`Could not find price for Bump 2 (${typeBump2})`);
         }
 
-        // --- BUMP 3: Views (Double Quantity), 20% Visual OFF ---
-        const viewsQuantity = product.quantity * 2;
-        const viewsPrice = findPrice('views', viewsQuantity);
-        if (viewsPrice > 0) {
+        // --- BUMP 3: Second Complementary (Double Quantity), 20% Visual OFF ---
+        const qtyBump3 = product.quantity * 2;
+        const priceBump3 = findPrice(typeBump3, qtyBump3);
+        
+        if (priceBump3 > 0) {
+             const titleMap = {
+                'followers': 'Seguidores Instagram',
+                'likes': 'Curtidas Instagram',
+                'views': 'Visualizações Instagram'
+            };
+
             bumpsToCreate.push({
-                title: `${viewsQuantity} Visualizações Instagram`,
-                price: viewsPrice,
+                title: `${qtyBump3} ${titleMap[typeBump3]}`,
+                price: priceBump3,
                 discount_percentage: 20, // Visual only
                 position: 2
             });
         } else {
-             console.warn('Could not find price for Views bump');
+             console.warn(`Could not find price for Bump 3 (${typeBump3})`);
         }
         
         console.log('Bumps to create:', bumpsToCreate);
