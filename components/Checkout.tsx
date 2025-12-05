@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlatformData, ServiceOffer, OrderForm, Product } from '../types';
+import { useAdmin } from '../context/AdminContext';
 import { ArrowLeft, Link as LinkIcon, Mail, Phone, QrCode, CreditCard, Lock, CheckCircle2, Copy, Loader2, Smartphone, Check, Plus, User, FileText, Users, Image as ImageIcon, Grid, X, UserPlus, Heart, Eye } from 'lucide-react';
 import { InstagramProfile, InstagramPost, TikTokProfile, TikTokPost, YouTubeVideo } from '../services/api';
 import { createPixPayment, checkPaymentStatus, PixCharge } from '../services/payment';
@@ -26,6 +27,7 @@ interface CheckoutProps {
 
 const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileData, initialStep = 1, initialPackage }) => {
   const navigate = useNavigate();
+  const { creditCardEnabled } = useAdmin();
 
   // Helper to get username from different profile types
   const getUsername = () => {
@@ -139,6 +141,13 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
   useEffect(() => {
     setHasOrderBump(false);
   }, [selectedPackage]);
+
+  // Ensure valid payment method
+  useEffect(() => {
+    if (!creditCardEnabled && formData.paymentMethod === 'credit_card') {
+      setFormData(prev => ({ ...prev, paymentMethod: 'pix' }));
+    }
+  }, [creditCardEnabled, formData.paymentMethod]);
 
   // Auto-open post selector when a distributable order bump is added
   const prevSelectedBumpsRef = useRef<string[]>([]);
@@ -1064,7 +1073,7 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
             {/* Payment Method Section */}
             <div className="mb-6">
               <label className="block text-sm font-bold text-slate-900 mb-3">Método de pagamento</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className={`grid ${creditCardEnabled ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
                 <div
                   onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'pix' }))}
                   className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center justify-center text-center gap-2 transition-all select-none ${formData.paymentMethod === 'pix' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-slate-200 bg-white hover:border-primary/50'}`}
@@ -1080,15 +1089,17 @@ const Checkout: React.FC<CheckoutProps> = ({ platform, offer, onBack, profileDat
                   )}
                 </div>
 
-                <div
-                  onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'credit_card' }))}
-                  className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center justify-center text-center gap-2 transition-all select-none ${formData.paymentMethod === 'credit_card' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-slate-200 bg-white hover:border-primary/50'}`}
-                >
-                  <div className="bg-slate-100 p-1.5 rounded-lg text-slate-600">
-                    <CreditCard className="w-4 h-4" />
+                {creditCardEnabled && (
+                  <div
+                    onClick={() => setFormData(prev => ({ ...prev, paymentMethod: 'credit_card' }))}
+                    className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center justify-center text-center gap-2 transition-all select-none ${formData.paymentMethod === 'credit_card' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-slate-200 bg-white hover:border-primary/50'}`}
+                  >
+                    <div className="bg-slate-100 p-1.5 rounded-lg text-slate-600">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-slate-900 text-xs">cartão</span>
                   </div>
-                  <span className="font-bold text-slate-900 text-xs">cartão</span>
-                </div>
+                )}
               </div>
             </div>
 

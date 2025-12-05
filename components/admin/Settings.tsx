@@ -9,7 +9,7 @@ interface PixDiscountSettings {
 }
 
 const Settings: React.FC = () => {
-    const { testButtonUrl, whatsappUrl, whatsappGroupUrl, logoUrl, faviconUrl, updateTestButtonUrl, updateWhatsappUrl, updateWhatsappGroupUrl, updateLogoUrl, updateFaviconUrl } = useAdmin();
+    const { testButtonUrl, whatsappUrl, whatsappGroupUrl, logoUrl, faviconUrl, updateTestButtonUrl, updateWhatsappUrl, updateWhatsappGroupUrl, updateLogoUrl, updateFaviconUrl, creditCardEnabled, updateCreditCardEnabled } = useAdmin();
     const [localTestUrl, setLocalTestUrl] = useState('');
     const [localWhatsappUrl, setLocalWhatsappUrl] = useState('');
     const [localWhatsappGroupUrl, setLocalWhatsappGroupUrl] = useState('');
@@ -129,6 +129,7 @@ const Settings: React.FC = () => {
             await updateWhatsappGroupUrl(localWhatsappGroupUrl);
             await updateLogoUrl(localLogoUrl);
             await updateFaviconUrl(localFaviconUrl);
+            // Credit card enabled is saved immediately on toggle
         } catch (err: any) {
             console.error('Error saving settings:', err);
             setError(err.message);
@@ -153,6 +154,39 @@ const Settings: React.FC = () => {
                     Configurações do Sistema
                 </h2>
                 <p className="text-slate-500 mt-1">Gerencie descontos, formas de pagamento e integrações.</p>
+            </div>
+
+            {/* PIX Discount Settings */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-blue-600" />
+                        Formas de Pagamento
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Gerencie os métodos de pagamento disponíveis
+                    </p>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* Credit Card Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <div>
+                            <label className="font-bold text-slate-900 block mb-1">Pagamento por Cartão de Crédito</label>
+                            <p className="text-sm text-slate-500">Ativar ou desativar a opção de pagamento via cartão no checkout</p>
+                        </div>
+                        <button
+                            onClick={() => updateCreditCardEnabled(!creditCardEnabled)}
+                            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${creditCardEnabled ? 'bg-green-600' : 'bg-slate-300'
+                                }`}
+                        >
+                            <span
+                                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${creditCardEnabled ? 'translate-x-7' : 'translate-x-1'
+                                    }`}
+                            />
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* PIX Discount Settings */}

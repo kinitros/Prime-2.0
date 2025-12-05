@@ -13,6 +13,7 @@ interface AdminContextType {
     facebookPixelId: string;
     googleAdsId: string;
     gtmId: string;
+    creditCardEnabled: boolean;
     updateTestButtonUrl: (url: string) => Promise<void>;
     updateWhatsappUrl: (url: string) => Promise<void>;
     updateWhatsappGroupUrl: (url: string) => Promise<void>;
@@ -21,6 +22,7 @@ interface AdminContextType {
     updateFacebookPixelId: (id: string) => Promise<void>;
     updateGoogleAdsId: (id: string) => Promise<void>;
     updateGtmId: (id: string) => Promise<void>;
+    updateCreditCardEnabled: (enabled: boolean) => Promise<void>;
     updateProduct: (platformId: string, offerId: string, product: Product) => Promise<void>;
     addProduct: (platformId: string, offerId: string, product: Product) => Promise<void>;
     deleteProduct: (platformId: string, offerId: string, productId: string) => Promise<void>;
@@ -50,6 +52,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [facebookPixelId, setFacebookPixelId] = useState('');
     const [googleAdsId, setGoogleAdsId] = useState('');
     const [gtmId, setGtmId] = useState('');
+    const [creditCardEnabled, setCreditCardEnabled] = useState(true);
 
     // Load data from Supabase on mount
     useEffect(() => {
@@ -62,7 +65,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const { data, error } = await supabase
                 .from('settings')
                 .select('*')
-                .in('setting_key', ['site_logo', 'site_favicon', 'whatsapp_group_url', 'test_button_url', 'whatsapp_url', 'facebook_pixel_id', 'google_ads_id', 'google_tag_manager_id']);
+                .in('setting_key', ['site_logo', 'site_favicon', 'whatsapp_group_url', 'test_button_url', 'whatsapp_url', 'facebook_pixel_id', 'google_ads_id', 'google_tag_manager_id', 'credit_card_enabled']);
 
             if (error && error.code !== 'PGRST116') {
                 console.error('Error loading settings:', error);
@@ -78,6 +81,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 const facebookPixelSetting = data.find(s => s.setting_key === 'facebook_pixel_id');
                 const googleAdsSetting = data.find(s => s.setting_key === 'google_ads_id');
                 const gtmSetting = data.find(s => s.setting_key === 'google_tag_manager_id');
+                const creditCardSetting = data.find(s => s.setting_key === 'credit_card_enabled');
 
                 if (logoSetting) setLogoUrl(logoSetting.setting_value);
                 if (faviconSetting) setFaviconUrl(faviconSetting.setting_value);
@@ -87,6 +91,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 if (facebookPixelSetting) setFacebookPixelId(facebookPixelSetting.setting_value);
                 if (googleAdsSetting) setGoogleAdsId(googleAdsSetting.setting_value);
                 if (gtmSetting) setGtmId(gtmSetting.setting_value);
+                if (creditCardSetting) setCreditCardEnabled(creditCardSetting.setting_value === 'true' || creditCardSetting.setting_value === true);
             }
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -735,6 +740,26 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
+    const updateCreditCardEnabled = async (enabled: boolean) => {
+        try {
+            const { error } = await supabase
+                .from('settings')
+                .upsert({
+                    setting_key: 'credit_card_enabled',
+                    setting_value: enabled,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                });
+
+            if (error) throw error;
+            setCreditCardEnabled(enabled);
+        } catch (error) {
+            console.error('Error updating credit card enabled:', error);
+            throw error;
+        }
+    };
+
     const updateTestButtonUrl = async (url: string) => {
         try {
             const { error } = await supabase
@@ -795,6 +820,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             facebookPixelId,
             googleAdsId,
             gtmId,
+            creditCardEnabled,
             updateTestButtonUrl,
             updateWhatsappUrl,
             updateWhatsappGroupUrl,
@@ -803,6 +829,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             updateFacebookPixelId,
             updateGoogleAdsId,
             updateGtmId,
+            updateCreditCardEnabled,
             updateProduct,
             addProduct,
             deleteProduct,
